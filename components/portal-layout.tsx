@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import Image from "next/image"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -63,21 +64,21 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
           {/* Logo with yellow triangle accent */}
           <div className="relative flex h-16 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 px-6">
             <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-accent via-primary to-secondary" />
-            <Link href="/" className="flex items-center gap-2">
-              <div className="relative flex h-10 w-10 items-center justify-center">
-                {/* Yellow triangle background */}
-                <div className="absolute inset-0 rotate-180">
-                  <svg viewBox="0 0 100 100" className="h-full w-full">
-                    <polygon points="50,10 90,90 10,90" fill="hsl(var(--accent))" opacity="0.2" />
-                  </svg>
-                </div>
-                <span className="relative z-10 text-xl font-bold text-primary">K</span>
-              </div>
-              <div>
-                <span className="text-lg font-bold">Kazipert</span>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Portal</div>
-              </div>
-            </Link>
+            {/* Logo */}
+          <Link 
+            href="/" 
+            className="flex items-center gap-3 group transition-opacity hover:opacity-90"
+          >
+            <Image
+              src="/logo.svg"
+              alt="Kazipert"
+              width={60}
+              height={60}
+              className="h-[50px] w-auto transition-transform duration-200 group-hover:scale-105"
+              priority
+            />
+            
+          </Link>
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </Button>
