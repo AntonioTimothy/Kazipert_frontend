@@ -84,9 +84,9 @@ export default function WorkerCertificatesPage() {
 
   const navigation = [
     { name: "Home", href: "/worker/dashboard", icon: Home },
-    { name: "My Profile", href: "/worker/profile", icon: User },
+    { name: "Profile", href: "/worker/profile", icon: User },
     { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
-    { name: "My Contracts", href: "/worker/contracts", icon: FileText },
+    { name: "Contracts", href: "/worker/contracts", icon: FileText },
     { name: "Payments", href: "/worker/payments", icon: CreditCard },
     { name: "Training", href: "/worker/training", icon: Video },
     { name: "Messages", href: "/worker/messages", icon: MessageSquare },

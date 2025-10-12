@@ -103,19 +103,19 @@ export default function WorkerContractsPage() {
           </TabsList>
 
           <TabsContent value="active" className="space-y-4">
-            {activeContracts.map((contract) => (
+            {activeContracts?.map((contract) => (
               <ContractCard key={contract.id} contract={contract} />
             ))}
           </TabsContent>
 
           <TabsContent value="pending" className="space-y-4">
-            {pendingContracts.map((contract) => (
+            {pendingContracts?.map((contract) => (
               <ContractCard key={contract.id} contract={contract} />
             ))}
           </TabsContent>
 
           <TabsContent value="completed" className="space-y-4">
-            {completedContracts.map((contract) => (
+            {completedContracts?.map((contract) => (
               <ContractCard key={contract.id} contract={contract} />
             ))}
           </TabsContent>

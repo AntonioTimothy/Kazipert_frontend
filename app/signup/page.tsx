@@ -1,4 +1,5 @@
 import { SignupForm } from "@/components/auth/signup-form"
+import WorkerOnboardingPage from "../onboarding/worker/page"
 
 export default function SignupPage() {
   return (
@@ -60,7 +61,8 @@ export default function SignupPage() {
 
       {/* Right side - Signup form */}
       <div className="flex items-center justify-center p-6 lg:p-12">
-        <SignupForm />
+        {/* <SignupForm /> */}
+        <WorkerOnboardingPage/>
       </div>
     </div>
   )

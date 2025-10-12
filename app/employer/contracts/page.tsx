@@ -7,8 +7,10 @@ import { Download, Eye, Plus } from "lucide-react"
 import { mockContracts } from "@/lib/mock-data"
 
 export default function EmployerContractsPage() {
-  const activeContracts = mockContracts.filter((c) => c.status === "active")
-  const pendingContracts = mockContracts.filter((c) => c.status === "pending")
+  // ✅ fallback to [] so build doesn’t break if mockContracts is undefined
+  const contracts = mockContracts || []
+  const activeContracts = contracts.filter((c) => c.status === "active")
+  const pendingContracts = contracts.filter((c) => c.status === "pending")
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -21,7 +23,7 @@ export default function EmployerContractsPage() {
     }
   }
 
-  const ContractCard = ({ contract }: { contract: (typeof mockContracts)[0] }) => (
+  const ContractCard = ({ contract }: { contract: (typeof contracts)[number] }) => (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -83,13 +85,13 @@ export default function EmployerContractsPage() {
           </TabsList>
 
           <TabsContent value="active" className="space-y-4">
-            {activeContracts.map((contract) => (
+            {(activeContracts || []).map((contract) => (
               <ContractCard key={contract.id} contract={contract} />
             ))}
           </TabsContent>
 
           <TabsContent value="pending" className="space-y-4">
-            {pendingContracts.map((contract) => (
+            {(pendingContracts || []).map((contract) => (
               <ContractCard key={contract.id} contract={contract} />
             ))}
           </TabsContent>

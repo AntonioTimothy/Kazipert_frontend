@@ -15,11 +15,13 @@ export default function WorkerPaymentsPage() {
   return (
     <PortalLayout userType="worker">
       <div className="space-y-6">
+        {/* Page Header */}
         <div>
           <h1 className="text-3xl font-bold text-balance">Payments & Salary</h1>
           <p className="text-muted-foreground mt-2">Track your earnings and manage money transfers</p>
         </div>
 
+        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -55,6 +57,7 @@ export default function WorkerPaymentsPage() {
           </Card>
         </div>
 
+        {/* Quick Actions & M-Pesa Integration */}
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
@@ -93,6 +96,7 @@ export default function WorkerPaymentsPage() {
           </Card>
         </div>
 
+        {/* Payment History */}
         <Card>
           <CardHeader>
             <CardTitle>Payment History</CardTitle>
@@ -100,7 +104,7 @@ export default function WorkerPaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {payments.map((payment) => (
+              {payments?.map((payment) => (
                 <div
                   key={payment.id}
                   className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"

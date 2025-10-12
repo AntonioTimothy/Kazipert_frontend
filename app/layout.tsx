@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        <LiveChatWidget />
+        {/* <LiveChatWidget /> */}
         <Analytics />
       </body>
     </html>

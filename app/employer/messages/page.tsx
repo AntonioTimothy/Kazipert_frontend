@@ -7,7 +7,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Search } from "lucide-react"
 
 export default function EmployerMessagesPage() {
-  const conversations = [
+  // ✅ Strongly typed arrays so they're never undefined
+  const conversations: {
+    id: number
+    name: string
+    avatar: string
+    lastMessage: string
+    time: string
+    unread: number
+  }[] = [
     {
       id: 1,
       name: "Amina Hassan",
@@ -34,7 +42,12 @@ export default function EmployerMessagesPage() {
     },
   ]
 
-  const currentMessages = [
+  const currentMessages: {
+    id: number
+    sender: "employer" | "worker"
+    text: string
+    time: string
+  }[] = [
     {
       id: 1,
       sender: "employer",
@@ -70,6 +83,7 @@ export default function EmployerMessagesPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Conversations list */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Conversations</CardTitle>
@@ -79,28 +93,33 @@ export default function EmployerMessagesPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
-                >
-                  <Avatar>
-                    <AvatarImage src={conv.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{conv.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium truncate">{conv.name}</p>
-                      {conv.unread > 0 && <Badge className="bg-accent-coral text-white">{conv.unread}</Badge>}
+              {Array.isArray(conversations) && conversations.length > 0 ? (
+                conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
+                  >
+                    <Avatar>
+                      <AvatarImage src={conv.avatar || "/placeholder.svg"} />
+                      <AvatarFallback>{conv.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium truncate">{conv.name}</p>
+                        {conv.unread > 0 && <Badge className="bg-accent-coral text-white">{conv.unread}</Badge>}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{conv.time}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{conv.time}</p>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No conversations found.</p>
+              )}
             </CardContent>
           </Card>
 
+          {/* Current chat */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -116,24 +135,35 @@ export default function EmployerMessagesPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="h-[400px] overflow-y-auto space-y-4 p-4 bg-muted/30 rounded-lg">
-                {currentMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.sender === "employer" ? "justify-end" : "justify-start"}`}>
+                {Array.isArray(currentMessages) && currentMessages.length > 0 ? (
+                  currentMessages.map((msg) => (
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        msg.sender === "employer" ? "bg-primary text-primary-foreground" : "bg-background border"
-                      }`}
+                      key={msg.id}
+                      className={`flex ${msg.sender === "employer" ? "justify-end" : "justify-start"}`}
                     >
-                      <p className="text-sm">{msg.text}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          msg.sender === "employer" ? "text-primary-foreground/70" : "text-muted-foreground"
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          msg.sender === "employer"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background border"
                         }`}
                       >
-                        {msg.time}
-                      </p>
+                        <p className="text-sm">{msg.text}</p>
+                        <p
+                          className={`text-xs mt-1 ${
+                            msg.sender === "employer"
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {msg.time}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No messages yet.</p>
+                )}
               </div>
 
               <div className="flex gap-2">

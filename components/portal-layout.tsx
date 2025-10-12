@@ -2,7 +2,6 @@
 
 import type React from "react"
 import Image from "next/image"
-
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -16,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, LogOut, Settings, User, Bell } from "lucide-react"
+import { Menu, X, LogOut, Settings, User, Bell, Briefcase } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface PortalLayoutProps {
@@ -36,6 +35,7 @@ interface PortalLayoutProps {
 
 export function PortalLayout({ children, navigation, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showJobsPopup, setShowJobsPopup] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
 
@@ -44,8 +44,11 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
     router.push("/login")
   }
 
+  // Limit to top 5 for mobile nav
+  const mobileNav = navigation?.slice(0, 5)
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -54,39 +57,36 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
         />
       )}
 
+      {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-border/50 bg-gradient-to-b from-card to-card/95 shadow-xl transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-border/50 bg-gradient-to-b from-card to-card/95 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          "hidden lg:block"
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Logo with yellow triangle accent */}
+          {/* Logo */}
           <div className="relative flex h-16 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 px-6">
             <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-accent via-primary to-secondary" />
-            {/* Logo */}
-          <Link 
-            href="/" 
-            className="flex items-center gap-3 group transition-opacity hover:opacity-90"
-          >
-            <Image
-              src="/logo.svg"
-              alt="Kazipert"
-              width={60}
-              height={60}
-              className="h-[50px] w-auto transition-transform duration-200 group-hover:scale-105"
-              priority
-            />
-            
-          </Link>
+            <Link href="/" className="flex items-center gap-3 group transition-opacity hover:opacity-90">
+              <Image
+                src="/logo.svg"
+                alt="Kazipert"
+                width={60}
+                height={60}
+                className="h-[50px] w-auto transition-transform duration-200 group-hover:scale-105"
+                priority
+              />
+            </Link>
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Navigation with yellow triangle indicators */}
+          {/* Navigation */}
           <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-            {navigation.map((item) => {
+            {navigation?.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link
@@ -98,9 +98,7 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
                       ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                   )}
-                  onClick={() => setSidebarOpen(false)}
                 >
-                  {/* Yellow triangle indicator for active item */}
                   {isActive && (
                     <div className="absolute -left-4 top-1/2 -translate-y-1/2">
                       <svg width="16" height="16" viewBox="0 0 100 100" className="animate-pulse">
@@ -108,46 +106,34 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
                       </svg>
                     </div>
                   )}
-                  <item.icon className={cn("h-5 w-5 transition-transform group-hover:scale-110")} />
+                  <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                   <span>{item.name}</span>
-                  {/* Subtle yellow triangle on hover */}
-                  {!isActive && (
-                    <div className="absolute right-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      <svg width="8" height="8" viewBox="0 0 100 100">
-                        <polygon points="50,10 90,50 50,90" fill="hsl(var(--accent))" opacity="0.5" />
-                      </svg>
-                    </div>
-                  )}
                 </Link>
               )
             })}
           </nav>
 
-          {/* User menu with enhanced design */}
+          {/* User menu */}
           <div className="border-t border-border/50 bg-gradient-to-r from-muted/30 to-muted/10 p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 px-2 hover:bg-muted/50 transition-all duration-200"
-                >
+                <Button variant="ghost" className="w-full justify-start gap-3 px-2 hover:bg-muted/50 transition-all">
                   <div className="relative">
                     <Avatar className="h-10 w-10 ring-2 ring-accent/20">
-                      <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                      <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user.name.charAt(0)}
+                        {user?.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    {/* Online indicator */}
                     <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-green-500" />
                   </div>
                   <div className="flex flex-col items-start text-left">
-                    <span className="text-sm font-semibold">{user.name}</span>
+                    <span className="text-sm font-semibold">{user?.name}</span>
                     <span className="text-xs text-muted-foreground capitalize flex items-center gap-1">
                       <svg width="8" height="8" viewBox="0 0 100 100" className="inline">
                         <polygon points="50,10 90,90 10,90" fill="hsl(var(--accent))" />
                       </svg>
-                      {user.role}
+                      {user?.role}
                     </span>
                   </div>
                 </Button>
@@ -156,17 +142,14 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
+                  <User className="mr-2 h-4 w-4" /> Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                  <Settings className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -176,6 +159,7 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Header */}
         <header className="flex h-16 items-center justify-between border-b border-border/50 bg-card/95 backdrop-blur-sm px-6 shadow-sm">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
@@ -192,10 +176,51 @@ export function PortalLayout({ children, navigation, user }: PortalLayoutProps) 
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 p-6">
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 p-6 pb-24">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-border/30 bg-card/95 backdrop-blur-md px-6 py-2 shadow-lg lg:hidden">
+          {mobileNav?.map((item, i) => {
+            const isActive = pathname === item.href
+            const isMiddle = i === 2 // center icon
+            return (
+              <div key={item.name} className="flex-1 flex justify-center">
+                {isMiddle ? (
+                  <button
+                    onClick={() => setShowJobsPopup(!showJobsPopup)}
+                    className={cn(
+                      "relative flex h-14 w-14 items-center justify-center rounded-full border-4 border-background shadow-md transition-transform duration-200",
+                      showJobsPopup
+                        ? "bg-primary text-primary-foreground scale-105"
+                        : "bg-gradient-to-br from-primary to-primary/80 text-white hover:scale-110",
+                    )}
+                  >
+                    <Briefcase className="h-6 w-6" />
+                    {showJobsPopup && (
+                      <div className="absolute -top-20 left-1/2 -translate-x-1/2 rounded-lg bg-card px-4 py-2 text-xs shadow-xl border border-border/40">
+                        <p className="font-medium">Browse Jobs</p>
+                      </div>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex flex-col items-center justify-center text-xs transition-all",
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 mb-1" />
+                    {item.name}
+                  </Link>
+                )}
+              </div>
+            )
+          })}
+        </nav>
       </div>
     </div>
   )

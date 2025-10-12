@@ -61,7 +61,7 @@ export default function WorkerOnboardingPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      {/* <SiteHeader /> */}
       <main className="flex-1 bg-muted/30 py-8">
         <div className="container max-w-6xl">
           <div className="mb-8">

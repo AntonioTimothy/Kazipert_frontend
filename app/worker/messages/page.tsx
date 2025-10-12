@@ -6,10 +6,26 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Send, Search } from "lucide-react"
 
+type Conversation = {
+  id: number
+  name: string
+  avatar?: string
+  lastMessage: string
+  time: string
+  unread: number
+}
+
+type Message = {
+  id: number
+  sender: "employer" | "worker"
+  text: string
+  time: string
+}
+
 export default function WorkerMessagesPage() {
-  const conversations = [
+  const conversations: Conversation[] = [
     {
-      id: 1,  
+      id: 1,
       name: "Al-Rashid Family",
       avatar: "/middle-eastern-professional.png",
       lastMessage: "Thank you for your hard work today!",
@@ -34,7 +50,7 @@ export default function WorkerMessagesPage() {
     },
   ]
 
-  const currentMessages = [
+  const currentMessages: Message[] = [
     {
       id: 1,
       sender: "employer",
@@ -70,6 +86,7 @@ export default function WorkerMessagesPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Conversations list */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Conversations</CardTitle>
@@ -79,7 +96,7 @@ export default function WorkerMessagesPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {conversations.map((conv) => (
+              {conversations?.map((conv) => (
                 <button
                   key={conv.id}
                   className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left"
@@ -91,7 +108,11 @@ export default function WorkerMessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="font-medium truncate">{conv.name}</p>
-                      {conv.unread > 0 && <Badge className="bg-accent-coral text-white">{conv.unread}</Badge>}
+                      {conv.unread > 0 && (
+                        <Badge className="bg-primary text-primary-foreground" variant="outline">
+                          {conv.unread}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
                     <p className="text-xs text-muted-foreground mt-1">{conv.time}</p>
@@ -101,6 +122,7 @@ export default function WorkerMessagesPage() {
             </CardContent>
           </Card>
 
+          {/* Active chat */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -116,17 +138,21 @@ export default function WorkerMessagesPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="h-[400px] overflow-y-auto space-y-4 p-4 bg-muted/30 rounded-lg">
-                {currentMessages.map((msg) => (
+                {currentMessages?.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.sender === "worker" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        msg.sender === "worker" ? "bg-primary text-primary-foreground" : "bg-background border"
+                        msg.sender === "worker"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background border"
                       }`}
                     >
                       <p className="text-sm">{msg.text}</p>
                       <p
                         className={`text-xs mt-1 ${
-                          msg.sender === "worker" ? "text-primary-foreground/70" : "text-muted-foreground"
+                          msg.sender === "worker"
+                            ? "text-primary-foreground/70"
+                            : "text-muted-foreground"
                         }`}
                       >
                         {msg.time}
