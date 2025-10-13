@@ -1,106 +1,297 @@
-import { LoginForm } from "@/components/auth/login-form"
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { Eye, EyeOff, XCircle, Mail, Lock } from "lucide-react";
+
+const slides = [
+  {
+    image: "/worker.jpg",
+    title: "Data Security You Can Trust",
+    desc: "Kazipert ensures your personal and professional data is encrypted and protected with global-grade security.",
+  },
+  {
+    image: "/worker2.webp",
+    title: "Smart Global Recruitment",
+    desc: "AI-powered tools help connect Kenyan talent with verified international employers effortlessly.",
+  },
+  {
+    image: "/worker3.webp",
+    title: "Seamless Job Applications",
+    desc: "A simple, guided process that lets you apply, verify, and track your applications all in one place.",
+  },
+  {
+    image: "/worker4.jpg",
+    title: "Empowering Global Employment",
+    desc: "Join thousands of users bridging opportunities beyond borders with Kazipert’s trusted platform.",
+  },
+];
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const [typedDesc, setTypedDesc] = useState("");
+
+  // Auto-slide every 8s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSlide((prev) => (prev + 1) % slides.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Typewriter effect
+  useEffect(() => {
+    let active = true;
+    const text = slides[slide]?.desc ?? "";
+    let index = 0;
+    setTypedDesc("");
+
+    const typing = setInterval(() => {
+      if (!active) return;
+      if (index < text.length) {
+        setTypedDesc((prev) => prev + text.charAt(index));
+        index++;
+      } else clearInterval(typing);
+    }, 25);
+
+    return () => {
+      active = false;
+      clearInterval(typing);
+    };
+  }, [slide]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Invalid email or password");
+      const data = await res.json();
+
+      if (data.role === "employer") router.push("/employer/dashboard");
+      else router.push("/employee/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-2">
-      {/* Left side - Graphics and information (hidden on mobile) */}
-      <div className="relative hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 lg:block">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div
+    <div className="flex min-h-screen flex-col lg:flex-row relative">
+      {/* Left section with background slides */}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center text-white overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5 }}
             className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23ffffff' fillOpacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-            }}
-          />
+          >
+            <Image
+              src={slides[slide].image}
+              alt="Kazipert background"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-[#33B1A1]/40 to-[#8B7CF0]/60" />
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="absolute top-10 left-10 z-20">
+          <Image src="/logo.svg" alt="Kazipert Logo" width={200} height={200} />
         </div>
 
-        <div className="relative flex h-full flex-col justify-between p-12">
-          {/* Logo */}
-          <div className="flex items-center gap-2 text-primary-foreground">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground/20">
-              <span className="text-xl font-bold">K</span>
-            </div>
-            <span className="text-2xl font-bold">Kazipert</span>
-          </div>
+        <div className="relative z-20 text-center px-12 max-w-lg">
+          <motion.h1
+            key={slides[slide].title}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-5xl font-bold leading-snug drop-shadow-lg tracking-tight"
+          >
+            {slides[slide].title}
+          </motion.h1>
+          <motion.p
+            key={typedDesc}
+            className="text-white/90 text-lg mt-6 leading-relaxed min-h-[4rem]"
+          >
+            {typedDesc}
+            <span className="animate-pulse">|</span>
+          </motion.p>
+        </div>
 
-          {/* Main content */}
-          <div className="space-y-6 text-primary-foreground">
-            <h1 className="text-4xl font-bold leading-tight text-balance">
-              Your Gateway to Safe Employment Opportunities
-            </h1>
-            <p className="text-lg text-primary-foreground/90 leading-relaxed">
-              Join thousands of workers and employers who trust Kazipert for transparent, secure, and compliant
-              recruitment services between Kenya and the Gulf region.
-            </p>
-
-            {/* Features */}
-            <div className="space-y-4 pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-semibold">KYC Verified Platform</div>
-                  <div className="text-sm text-primary-foreground/80">Biometric and OTP verification for security</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-semibold">End-to-End Support</div>
-                  <div className="text-sm text-primary-foreground/80">From visa processing to arrival confirmation</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-semibold">Secure Payments</div>
-                  <div className="text-sm text-primary-foreground/80">
-                    Bank-verified transactions and M-Pesa support
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-sm text-primary-foreground/70">
-            © 2025 Kazipert. Connecting opportunities across borders.
-          </div>
+        <div className="absolute bottom-8 flex space-x-2 z-20">
+          {slides.map((_, i) => (
+            <div
+              key={i}
+              className={`h-2 w-6 rounded-full transition-all ${
+                i === slide ? "bg-white w-8" : "bg-white/40"
+              }`}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Right side - Login form */}
-      <div className="flex items-center justify-center p-6 lg:p-12">
-        <LoginForm />
+      {/* Right side - Form */}
+      <div className="flex flex-col justify-center w-full lg:w-1/2 p-8 sm:p-12 bg-white relative overflow-hidden">
+        {/* Toast Error */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ y: -60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -60, opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-md flex items-center gap-2 shadow-md z-30"
+            >
+              <XCircle size={18} />
+              <span className="text-sm font-medium">{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Logo */}
+        <div className="flex justify-center mb-8 lg:hidden">
+          <Image src="/logo.svg" alt="Kazipert Logo" width={120} height={120} />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-md mx-auto w-full space-y-8"
+        >
+          <div>
+            <h2 className="text-4xl font-bold text-gray-800 mb-2 tracking-tight">
+              Welcome back 👋
+            </h2>
+            <p className="text-gray-500 text-base">
+              Sign in to access your Kazipert dashboard.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+                <input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#33B1A1] outline-none transition bg-gray-50 hover:bg-gray-100"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B7CF0] outline-none transition bg-gray-50 hover:bg-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <div className="text-right mt-2">
+                <button
+                  type="button"
+                  onClick={() => router.push("/forgot-password")}
+                  className="text-sm text-[#8B7CF0] hover:underline font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-[#33B1A1] to-[#8B7CF0] text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition-all shadow-sm disabled:opacity-60"
+            >
+              {loading ? "Signing in..." : "Login"}
+            </motion.button>
+
+            <div className="text-sm text-center text-gray-600 mt-4">
+              Don’t have an account?{" "}
+              <button
+                type="button"
+                onClick={() => router.push("/signup")}
+                className="text-[#33B1A1] hover:underline font-semibold"
+              >
+                Sign up
+              </button>
+            </div>
+          </form>
+
+          {loading && (
+            <motion.div
+              className="mt-6 h-1 bg-gray-100 rounded-full overflow-hidden"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-[#33B1A1] to-[#8B7CF0]"
+                animate={{ x: ["0%", "100%"] }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.div>
+          )}
+        </motion.div>
       </div>
     </div>
-  )
+  );
 }

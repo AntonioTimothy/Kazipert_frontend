@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15
+    container_name: kazipert_db
+    restart: always
+    environment:
+      POSTGRES_USER: kazipert
+      POSTGRES_PASSWORD: kazipert123
+      POSTGRES_DB: kazipert_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
