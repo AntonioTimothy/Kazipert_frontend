@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, XCircle, Mail, Lock } from "lucide-react";
+import jwtDecode from "jwt-decode";
 
 const slides = [
   {
@@ -28,6 +29,13 @@ const slides = [
     desc: "Join thousands of users bridging opportunities beyond borders with Kazipert’s trusted platform.",
   },
 ];
+
+interface JwtPayload {
+  id: string;
+  email: string;
+  role: "employer" | "employee";
+  exp?: number;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,6 +75,7 @@ export default function LoginPage() {
     };
   }, [slide]);
 
+  // Auto clear toast after 10s
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => setError(""), 10000);
@@ -82,18 +91,29 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
+
       if (!res.ok) throw new Error("Invalid email or password");
       const data = await res.json();
 
-      if (data.role === "employer") router.push("/employer/dashboard");
+      // Expecting backend returns { token: string }
+      if (!data.token) throw new Error("Invalid server response");
+
+      // Save JWT
+      localStorage.setItem("kazipert_token", data.token);
+
+      // Decode
+      const decoded: JwtPayload = jwtDecode(data.token);
+
+      // Redirect by role
+      if (decoded.role === "employer") router.push("/employer/dashboard");
       else router.push("/employee/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to login. Try again.");
     } finally {
       setLoading(false);
     }

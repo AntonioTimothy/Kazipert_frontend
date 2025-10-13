@@ -15,6 +15,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
 
   // Handle scroll effect
+  
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
@@ -59,9 +60,9 @@ export function SiteHeader() {
             <Image
               src="/logo.svg"
               alt="Kazipert"
-              width={60}
-              height={60}
-              className="h-[50px] w-auto transition-transform duration-200 group-hover:scale-105"
+              width={250}
+              height={220}
+              className="transition-transform duration-200 group-hover:scale-105"
               priority
             />
             

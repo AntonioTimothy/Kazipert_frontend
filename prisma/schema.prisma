@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  phone             String?  @unique
+  password          String
+  fullName          String?
+  role              Role     @default(EMPLOYEE)
+  kycId             String?  // store KYC document id or number
+  verified          Boolean  @default(false)
+  otp               String?  // 4-digit OTP (string)
+  otpExpires        DateTime?
+  resetToken        String?  // password reset token
+  resetTokenExpires DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum Role {
+  EMPLOYER
+  EMPLOYEE
+}
