@@ -29,28 +29,28 @@ import { cn } from "@/lib/utils";
 
 const slides = [
   {
-    image: "/worker.jpg",
+    image: "/employee1.jpg",
     title: "Your Data Security is Our Priority",
     desc: "Bank-level encryption and global security standards protect your information. Trust Kazipert with your career journey.",
     icon: Shield,
     trustPoints: ["256-bit Encryption", "GDPR Compliant", "Secure Verification"]
   },
   {
-    image: "/worker2.webp",
+    image: "/employee2.jpg",
     title: "Verified Global Opportunities",
     desc: "Every employer and employee is thoroughly verified. Build your career on a foundation of trust and authenticity.",
     icon: Briefcase,
     trustPoints: ["Background Verified", "Secure Payments", "24/7 Support"]
   },
   {
-    image: "/worker3.webp",
+    image: "/employee3.jpg",
     title: "Trusted by Thousands Worldwide",
     desc: "Join a community that values security, transparency, and successful global connections you can rely on.",
     icon: UserCheck,
     trustPoints: ["10,000+ Users", "98% Success Rate", "Global Reach"]
   },
   {
-    image: "/worker4.jpg",
+    image: "/employee.jpg",
     title: "Secure Borderless Employment",
     desc: "Your passport to global opportunities with the security and trust you deserve at every step.",
     icon: Globe,
@@ -489,8 +489,8 @@ export default function SignupPage() {
               <div className="relative">
                 <Image 
                   src="/logo.svg" 
-                  width={60} 
-                  height={60} 
+                  width={160} 
+                  height={160} 
                   alt="logo" 
                   className="drop-shadow"
                   priority
@@ -498,9 +498,9 @@ export default function SignupPage() {
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#FFD700] rounded-full border-2 border-white shadow"></div>
               </div>
               <div className="space-y-1">
-                <h1 className="text-xl font-bold text-gray-900">
+                {/* <h1 className="text-xl font-bold text-gray-900">
                   Join Kazipert
-                </h1>
+                </h1> */}
                 <p className="text-sm text-gray-600">
                   Create your secure account
                 </p>
@@ -604,7 +604,7 @@ export default function SignupPage() {
                   <div className="grid grid-cols-1 gap-3">
                     <RoleCard
                       r="EMPLOYEE"
-                      title="Job Seeker"
+                      title="Domestic Job Seeker"
                       desc="Find verified global opportunities"
                       icon={<User size={18} />}
                     />

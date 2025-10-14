@@ -1,76 +1,69 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
     try {
-        const body = await req.json();
-        const { email, password, phone, fullName, role, kycId, gender, country } = body;
+        const { email, password, phone, fullName, gender, role } = await request.json();
 
-        if (!email || !password || !phone || !role || !fullName) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        // Validate required fields
+        if (!email || !password || !phone || !fullName || !gender || !role) {
+            return NextResponse.json(
+                { error: 'All fields are required' },
+                { status: 400 }
+            );
         }
 
-        const normalizedEmail = email.toLowerCase();
+        // Check if user already exists
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email },
+                    { phone }
+                ]
+            }
+        });
 
-        // Validate role
-        const validRoles = ["EMPLOYER", "EMPLOYEE"];
-        if (!validRoles.includes(role.toUpperCase())) {
-            return NextResponse.json({ error: "Invalid role provided" }, { status: 400 });
-        }
-
-        // Check duplicates
-        const existingEmail = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-        const existingPhone = await prisma.user.findUnique({ where: { phone } });
-
-        if (existingEmail) {
-            return NextResponse.json({ error: "Email already registered" }, { status: 400 });
-        }
-        if (existingPhone) {
-            return NextResponse.json({ error: "Phone number already registered" }, { status: 400 });
+        if (existingUser) {
+            return NextResponse.json(
+                { error: 'User with this email or phone already exists' },
+                { status: 409 }
+            );
         }
 
         // Hash password
-        const hashed = await bcrypt.hash(password, 10);
-
-        // Generate OTP for verification
-        const otp = Math.floor(1000 + Math.random() * 9000).toString();
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         // Create user
         const user = await prisma.user.create({
             data: {
-                email: normalizedEmail,
-                password: hashed,
+                email,
+                password: hashedPassword,
                 phone,
                 fullName,
-                gender: gender || null,
-                country: country || null,
-                kycId: kycId || null,
-                role: role.toUpperCase(),
-                otp,
-                otpExpires,
-                isVerified: false,
-            },
-            select: {
-                id: true,
-                email: true,
-                phone: true,
-                role: true,
-                otp: true,
-            },
+                gender,
+                role,
+                verified: false,
+                emailVerified: false,
+                phoneVerified: false
+            }
         });
 
-        // Log OTP for now
-        console.log(`[SIGNUP] OTP for ${user.email}: ${otp} (expires ${otpExpires.toISOString()})`);
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
 
-        return NextResponse.json({
-            success: true,
-            message: "Signup successful. Please verify your OTP.",
-            email: user.email,
-        });
-    } catch (err: any) {
-        console.error("[SIGNUP_ERROR]", err);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json(
+            {
+                message: 'User created successfully',
+                user: userWithoutPassword
+            },
+            { status: 201 }
+        );
+    } catch (error) {
+        console.error('Signup error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }

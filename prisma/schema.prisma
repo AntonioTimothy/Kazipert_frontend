@@ -1,3 +1,4 @@
+// schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,18 +14,42 @@ model User {
   phone             String?  @unique
   password          String
   fullName          String?
+  gender            String?  // Added gender field
+  country           String?  // Added country field
   role              Role     @default(EMPLOYEE)
   kycId             String?  // store KYC document id or number
   verified          Boolean  @default(false)
+  emailVerified     Boolean  @default(false) // Track email verification separately
+  phoneVerified     Boolean  @default(false) // Track phone verification separately
   otp               String?  // 4-digit OTP (string)
   otpExpires        DateTime?
   resetToken        String?  // password reset token
   resetTokenExpires DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  
+  @@map("users")
+}
+
+model OtpVerification {
+  id        String   @id @default(cuid())
+  email     String?
+  phone     String?
+  otp       String   // 4-digit OTP
+  type      OtpType  // EMAIL or PHONE
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@map("otp_verifications")
 }
 
 enum Role {
   EMPLOYER
   EMPLOYEE
+}
+
+enum OtpType {
+  EMAIL
+  PHONE
 }
