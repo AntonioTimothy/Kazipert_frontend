@@ -61,19 +61,33 @@ const slides = [
 function OtpInput({ onComplete }: { onComplete: (code: string) => void }) {
   const length = 4;
   const [values, setValues] = useState<string[]>(Array(length).fill(""));
+  const [hasCompleted, setHasCompleted] = useState(false);
 
   useEffect(() => {
     const combined = values.join("");
-    if (combined.length === length && !values.includes("")) onComplete(combined);
-  }, [values, onComplete]);
+    if (combined.length === length && !values.includes("") && !hasCompleted) {
+      setHasCompleted(true);
+      onComplete(combined);
+    }
+  }, [values, onComplete, hasCompleted]);
 
   const handleChange = (i: number, v: string) => {
     if (!/^\d*$/.test(v)) return;
+    
     const next = [...values];
     next[i] = v.slice(-1);
     setValues(next);
+    setHasCompleted(false); // Reset completion state when user makes changes
+    
     if (v && i < length - 1) {
       const el = document.getElementById(`otp-${i + 1}`) as HTMLInputElement | null;
+      el?.focus();
+    }
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !values[i] && i > 0) {
+      const el = document.getElementById(`otp-${i - 1}`) as HTMLInputElement | null;
       el?.focus();
     }
   };
@@ -88,6 +102,7 @@ function OtpInput({ onComplete }: { onComplete: (code: string) => void }) {
           maxLength={1}
           inputMode="numeric"
           onChange={(e) => handleChange(i, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
           className="w-12 h-12 text-center rounded-lg border-2 border-gray-300 text-lg font-bold focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] outline-none bg-white transition-all duration-200"
         />
       ))}

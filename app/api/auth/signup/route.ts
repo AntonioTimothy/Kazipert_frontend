@@ -6,8 +6,11 @@ export async function POST(request: NextRequest) {
     try {
         const { email, password, phone, fullName, gender, role } = await request.json();
 
+        console.log('Signup attempt:', { email, phone, fullName });
+
         // Validate required fields
         if (!email || !password || !phone || !fullName || !gender || !role) {
+            console.log('Missing fields:', { email, password, phone, fullName, gender, role });
             return NextResponse.json(
                 { error: 'All fields are required' },
                 { status: 400 }
@@ -25,16 +28,45 @@ export async function POST(request: NextRequest) {
         });
 
         if (existingUser) {
+            console.log('User already exists:', existingUser.email);
             return NextResponse.json(
                 { error: 'User with this email or phone already exists' },
                 { status: 409 }
             );
         }
 
+        // Check verification status from OTP records
+        const emailVerification = await prisma.otpVerification.findFirst({
+            where: {
+                email,
+                type: 'EMAIL',
+                verified: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        const phoneVerification = await prisma.otpVerification.findFirst({
+            where: {
+                phone,
+                type: 'PHONE',
+                verified: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        console.log('Verification status:', {
+            emailVerified: !!emailVerification,
+            phoneVerified: !!phoneVerification
+        });
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user
+        // Create user with verification status
         const user = await prisma.user.create({
             data: {
                 email,
@@ -43,10 +75,15 @@ export async function POST(request: NextRequest) {
                 fullName,
                 gender,
                 role,
-                verified: false,
-                emailVerified: false,
-                phoneVerified: false
+                verified: false, // Overall verification status
+                emailVerified: !!emailVerification, // Set based on OTP verification
+                phoneVerified: !!phoneVerification  // Set based on OTP verification
             }
+        });
+
+        console.log('User created successfully:', user.email, {
+            emailVerified: user.emailVerified,
+            phoneVerified: user.phoneVerified
         });
 
         // Remove password from response
@@ -55,14 +92,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
             {
                 message: 'User created successfully',
-                user: userWithoutPassword
+                user: userWithoutPassword,
+                verified: {
+                    email: user.emailVerified,
+                    phone: user.phoneVerified
+                }
             },
             { status: 201 }
         );
-    } catch (error) {
+    } catch (error: any) {
         console.error('Signup error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Internal server error: ' + error.message },
             { status: 500 }
         );
     }
