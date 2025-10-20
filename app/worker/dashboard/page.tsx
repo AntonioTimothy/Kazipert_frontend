@@ -21,6 +21,7 @@ import {
   Send,
   Receipt,
   AlertTriangle,
+  Star,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -56,11 +57,10 @@ export default function WorkerDashboard() {
     return <LoadingSpinner />
   }
 
-  const navigation = [
+  const navigationdsds = [
     { name: "Home", href: "/worker/dashboard", icon: Home },
-    { name: "My Profile", href: "/worker/profile", icon: User },
-    { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
-    { name: "My Contracts", href: "/worker/contracts", icon: FileText },
+    { name: "Jobs", href: "/worker/jobs", icon: Briefcase },
+    { name: "My Applications", href: "/worker/contracts", icon: FileText },
     { name: "Payslips", href: "/worker/payslips", icon: Receipt },
     { name: "Payment History", href: "/worker/payment-history", icon: DollarSign },
     { name: "Subscriptions", href: "/worker/subscriptions", icon: Shield },
@@ -69,6 +69,20 @@ export default function WorkerDashboard() {
     { name: "Report Issue", href: "/worker/report-issue", icon: AlertTriangle },
     { name: "Reviews", href: "/worker/reviews", icon: MessageSquare },
   ]
+
+  const navigation = [
+    { name: "Dashboard", href: "/worker/dashboard", icon: Home },
+    
+    { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
+    { name: "My Applications", href: "/worker/contracts", icon: FileText },
+    { name: "Wallet", href: "/worker/payments", icon: CreditCard },
+    { name: "Services", href: "/worker/services", icon: Shield },
+    { name: "Training", href: "/worker/training", icon: Video },
+    { name: "Reviews", href: "/worker/reviews", icon: Star },
+
+    { name: "Support", href: "/worker/support", icon: MessageSquare },
+  ]
+
 
   const userContract = mockContracts.find((c) => c.workerId === user.id)
 

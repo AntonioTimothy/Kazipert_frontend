@@ -108,65 +108,7 @@ export const mockWorkers: WorkerProfile[] = [
       legal: true,
       medical: true,
     },
-  },
-  {
-    id: "w2",
-    email: "fatima.mohamed@email.com",
-    name: "Fatima Mohamed",
-    role: "worker",
-    phone: "+254 723 456 789",
-    avatar: "/african-woman-smiling.jpg",
-    kycStatus: "verified",
-    createdAt: "2024-02-20",
-    age: 32,
-    nationality: "Kenyan",
-    experience: "7 years in housekeeping",
-    skills: ["Housekeeping", "Cooking", "Laundry", "Organization"],
-    languages: ["English", "Swahili", "Arabic"],
-    education: "Diploma in Home Management",
-    availability: "Within 2 weeks",
-    preferredLocation: "Dubai, UAE",
-    salaryExpectation: "$500-600/month",
-    documents: {
-      passport: true,
-      certificate: true,
-      medicalReport: true,
-    },
-    subscriptions: {
-      insurance: true,
-      legal: true,
-      medical: false,
-    },
-  },
-  {
-    id: "w3",
-    email: "grace.wanjiru@email.com",
-    name: "Grace Wanjiru",
-    role: "worker",
-    phone: "+254 734 567 890",
-    avatar: "/african-woman-professional-attire.jpg",
-    kycStatus: "pending",
-    createdAt: "2024-03-10",
-    age: 25,
-    nationality: "Kenyan",
-    experience: "3 years in childcare",
-    skills: ["Childcare", "Tutoring", "Cooking", "First Aid"],
-    languages: ["English", "Swahili"],
-    education: "Certificate in Early Childhood Education",
-    availability: "Within 1 month",
-    preferredLocation: "Muscat, Oman",
-    salaryExpectation: "$350-450/month",
-    documents: {
-      passport: true,
-      certificate: true,
-      medicalReport: false,
-    },
-    subscriptions: {
-      insurance: false,
-      legal: true,
-      medical: false,
-    },
-  },
+  }
 ]
 
 export const mockEmployers: EmployerProfile[] = [
@@ -189,27 +131,7 @@ export const mockEmployers: EmployerProfile[] = [
       insurance: true,
       legal: true,
     },
-  },
-  {
-    id: "e2",
-    email: "mohammed.albusaidi@email.com",
-    name: "Mohammed Al-Busaidi",
-    role: "employer",
-    phone: "+968 9234 5678",
-    avatar: "/middle-eastern-businessman.jpg",
-    kycStatus: "verified",
-    createdAt: "2024-02-05",
-    company: "Al-Busaidi Residence",
-    location: "Salalah",
-    country: "Oman",
-    familySize: 4,
-    houseType: "Apartment",
-    requirements: ["Housekeeping", "Cooking", "Elderly Care"],
-    subscriptions: {
-      insurance: true,
-      legal: true,
-    },
-  },
+  }
 ]
 
 export const mockAdmins: User[] = [
@@ -313,6 +235,18 @@ export function getUserByEmailAndRole(email: string, role: string): User | null 
   }
   return null
 }
+
+export function decorateUserTemp(role: string): User | null {
+  if (role === "worker") {
+    return mockWorkers.find((w) => w.role === role) || null
+  } else if (role === "employer") {
+    return mockEmployers.find((e) => e.role === role) || null
+  } else if (role === "admin") {
+    return mockAdmins.find((a) => a.role === role) || null
+  }
+  return null
+}
+
 
 // Training videos data
 export const trainingVideos = {

@@ -19,6 +19,7 @@ import {
   Globe,
   Lock,
   Star,
+  Workflow,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ const slides = [
     trustPoints: ["10,000+ Users", "98% Success Rate", "Global Reach"]
   },
   {
-    image: "/employee.jpg",
+    image: "/employee5.jpg",
     title: "Secure Borderless Employment",
     desc: "Your passport to global opportunities with the security and trust you deserve at every step.",
     icon: Globe,
@@ -212,9 +213,9 @@ export default function SignupPage() {
       if (step === 3) return setError("Please enter a valid email address");
       return setError("Please complete all required fields.");
     }
-    
-    setError("");
 
+    setError("");
+                              
     if (step === 2) {
       setLoading(true);
       try {
@@ -352,7 +353,7 @@ export default function SignupPage() {
       if (!res.ok) throw new Error(json?.error || "Signup failed");
       
       setSuccess("Account created successfully! Redirecting to login...");
-      setTimeout(() => router.push("/login"), 2000);
+      setTimeout(() => router.push("/login"), 1000);
     } catch (err: any) {
       setError(err?.message || "Signup failed");
     } finally {
@@ -619,14 +620,14 @@ export default function SignupPage() {
                   <div className="grid grid-cols-1 gap-3">
                     <RoleCard
                       r="EMPLOYEE"
-                      title="Domestic Job Seeker"
-                      desc="Find verified global opportunities"
-                      icon={<User size={18} />}
+                      title="Register as Domestic Worker"
+                      desc="Find verified jobs opportunities abroad"
+                      icon={<Workflow size={18} />}
                     />
                     <RoleCard
                       r="EMPLOYER"
-                      title="Recruiter"
-                      desc="Hire pre-vetted international talent"
+                      title="Register as an Employer"
+                      desc="Hire trained and verified domestic workers"
                       icon={<UserCheck size={18} />}
                     />
                   </div>

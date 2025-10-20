@@ -57,7 +57,7 @@ export default function WorkerPaymentCards() {
     return <div>Loading...</div>
   }
 
-  const navigation = [
+  const navigatiodsdsn = [
     { name: "Dashboard", href: "/worker/dashboard", icon: Home },
     { name: "My Profile", href: "/worker/profile", icon: User },
     { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
@@ -68,6 +68,20 @@ export default function WorkerPaymentCards() {
     { name: "Training", href: "/worker/training", icon: Video },
     { name: "Support", href: "/worker/support", icon: MessageSquare },
   ]
+
+   const navigation = [
+      { name: "Dashboard", href: "/worker/dashboard", icon: Home },
+      
+      { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
+      { name: "My Applications", href: "/worker/contracts", icon: FileText },
+      { name: "Wallet", href: "/worker/payments", icon: CreditCard },
+      { name: "Services", href: "/worker/services", icon: Shield },
+      { name: "Training", href: "/worker/training", icon: Video },
+      { name: "Reviews", href: "/worker/reviews", icon: Star },
+  
+      { name: "Support", href: "/worker/support", icon: MessageSquare },
+    ]
+  
 
   const userCards = mockPaymentCards.filter((c) => c.userId === user.id)
 

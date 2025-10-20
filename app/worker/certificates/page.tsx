@@ -18,6 +18,8 @@ import {
   CheckCircle,
   Calendar,
   ExternalLink,
+  Star,
+  Shield,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -81,16 +83,20 @@ export default function WorkerCertificatesPage() {
   if (loading || !user) {
     return <LoadingSpinner />
   }
-
   const navigation = [
-    { name: "Home", href: "/worker/dashboard", icon: Home },
-    { name: "Profile", href: "/worker/profile", icon: User },
+    { name: "Dashboard", href: "/worker/dashboard", icon: Home },
+    
     { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
-    { name: "Contracts", href: "/worker/contracts", icon: FileText },
-    { name: "Payments", href: "/worker/payments", icon: CreditCard },
+    { name: "My Applications", href: "/worker/contracts", icon: FileText },
+    { name: "Wallet", href: "/worker/payments", icon: CreditCard },
+    { name: "Services", href: "/worker/services", icon: Shield },
     { name: "Training", href: "/worker/training", icon: Video },
-    { name: "Messages", href: "/worker/messages", icon: MessageSquare },
+    { name: "Reviews", href: "/worker/reviews", icon: Star },
+
+    { name: "Support", href: "/worker/support", icon: MessageSquare },
   ]
+
+  
 
   return (
     <PortalLayout navigation={navigation} user={user}>

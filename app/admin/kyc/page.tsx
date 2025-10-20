@@ -168,6 +168,7 @@ export default function AdminKYCPage() {
         </div>
 
         {/* Stats */}
+        
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -17,6 +17,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Star,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -48,7 +49,7 @@ export default function WorkerPaymentHistory() {
     return <div>Loading...</div>
   }
 
-  const navigation = [
+  const navigationdsds = [
     { name: "Dashboard", href: "/worker/dashboard", icon: Home },
     { name: "My Profile", href: "/worker/profile", icon: User },
     { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
@@ -59,6 +60,20 @@ export default function WorkerPaymentHistory() {
     { name: "Training", href: "/worker/training", icon: Video },
     { name: "Support", href: "/worker/support", icon: MessageSquare },
   ]
+
+  const navigation = [
+    { name: "Dashboard", href: "/worker/dashboard", icon: Home },
+    
+    { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
+    { name: "My Applications", href: "/worker/contracts", icon: FileText },
+    { name: "Wallet", href: "/worker/payments", icon: CreditCard },
+    { name: "Services", href: "/worker/services", icon: Shield },
+    { name: "Training", href: "/worker/training", icon: Video },
+    { name: "Reviews", href: "/worker/reviews", icon: Star },
+
+    { name: "Support", href: "/worker/support", icon: MessageSquare },
+  ]
+
 
   const userSalaryPayments = mockSalaryPayments.filter((p) => p.workerId === user.id)
   const userMpesaTransactions = mockMpesaTransactions.filter((t) => t.workerId === user.id)

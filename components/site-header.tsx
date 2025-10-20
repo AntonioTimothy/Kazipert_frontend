@@ -60,8 +60,8 @@ export function SiteHeader() {
             <Image
               src="/logo.svg"
               alt="Kazipert"
-              width={250}
-              height={220}
+              width={200}
+              height={200}
               className="transition-transform duration-200 group-hover:scale-105"
               priority
             />

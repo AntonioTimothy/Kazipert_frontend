@@ -1,15 +1,41 @@
+"use client"
+
+
 import { PortalLayout } from "@/components/portal-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Eye, CheckCircle, Clock, XCircle } from "lucide-react"
-import { mockContracts } from "@/lib/mock-data"
+import { Download, Eye, CheckCircle, Clock, XCircle, Home, Briefcase, FileText, CreditCard, Shield, Video, Star, MessageSquare } from "lucide-react"
+import { mockContracts, WorkerProfile } from "@/lib/mock-data"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function WorkerContractsPage() {
+
   const activeContracts = mockContracts.filter((c) => c.status === "active")
   const pendingContracts = mockContracts.filter((c) => c.status === "pending")
   const completedContracts = mockContracts.filter((c) => c.status === "completed")
+    const [user, setUser] = useState<WorkerProfile | null>(null)
+    const router = useRouter()
+
+    useEffect(() => {
+        const userData = sessionStorage.getItem("user")
+        if (!userData) {
+          router.push("/login")
+          return
+        }
+    
+        const parsedUser = JSON.parse(userData)
+        if (parsedUser.role !== "worker") {
+          router.push("/login")
+          return
+        }
+    
+        setUser(parsedUser)
+        // setLoading(false)
+      }, [router])
+  
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -36,6 +62,20 @@ export default function WorkerContractsPage() {
         return "bg-gray-500/10 text-gray-700 border-gray-200"
     }
   }
+
+  const navigation = [
+    { name: "Dashboard", href: "/worker/dashboard", icon: Home },
+    
+    { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
+    { name: "My Applications", href: "/worker/contracts", icon: FileText },
+    { name: "Wallet", href: "/worker/payments", icon: CreditCard },
+    { name: "Services", href: "/worker/services", icon: Shield },
+    { name: "Training", href: "/worker/training", icon: Video },
+    { name: "Reviews", href: "/worker/reviews", icon: Star },
+
+    { name: "Support", href: "/worker/support", icon: MessageSquare },
+  ]
+
 
   const ContractCard = ({ contract }: { contract: (typeof mockContracts)[0] }) => (
     <Card className="hover:shadow-md transition-shadow">
@@ -88,7 +128,7 @@ export default function WorkerContractsPage() {
   )
 
   return (
-    <PortalLayout userType="worker">
+    <PortalLayout navigation={navigation} user={user}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-balance">My Contracts</h1>

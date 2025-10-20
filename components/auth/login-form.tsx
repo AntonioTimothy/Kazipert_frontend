@@ -38,6 +38,7 @@ export function LoginForm() {
 
       // Redirect based on user type
       if (userType === "worker") {
+        console.log("Redirecting to worker dashboard>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         router.push("/worker/dashboard")
       } else if (userType === "employer") {
         router.push("/employer/dashboard")
