@@ -6,6 +6,8 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Suspense } from "react"
 import { LiveChatWidget } from "@/components/live-chat-widget"
+import { ThemeProvider } from "@/contexts/ThemeContext"
+import { ThemeInitializer } from '@/components/ThemeInitializer'
 
 export const metadata: Metadata = {
   title: "Kazipert - Connecting Kenyan Workers with Gulf Employers",
@@ -22,8 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+      <ThemeProvider>
+      <ThemeInitializer />
         <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
         {/* <LiveChatWidget /> */}
+        </ThemeProvider>
+
         <Analytics />
       </body>
     </html>

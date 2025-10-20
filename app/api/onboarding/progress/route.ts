@@ -1,59 +1,77 @@
-// app/api/onboarding/progress/route.ts
+// app/api/onboarding/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import fs from 'fs';
+import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-
-export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const userId = searchParams.get('userId');
-
-        if (!userId) {
-            return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-        }
-
-        const progress = await prisma.onboardingProgress.findUnique({
-            where: { userId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        email: true,
-                        phone: true,
-                        role: true
-                    }
-                }
-            }
-        });
-
-        return NextResponse.json({ progress });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-}
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId, currentStep, completed, steps } = await request.json();
+        const formData = await request.formData();
+        const file = formData.get('file') as File;
+        const userId = formData.get('userId') as string;
+        const documentType = formData.get('documentType') as string;
 
-        const progress = await prisma.onboardingProgress.upsert({
+        if (!file || !userId || !documentType) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Create uploads directory
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads', userId);
+        await mkdir(uploadsDir, { recursive: true });
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const fileExtension = path.extname(file.name);
+        const filename = `${documentType}_${timestamp}${fileExtension}`;
+        const filepath = path.join(uploadsDir, filename);
+
+        // Save file
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filepath, buffer);
+
+        const fileUrl = `/uploads/${userId}/${filename}`;
+
+        // Update database
+        const updateData: any = {};
+        switch (documentType) {
+            case 'profilePicture':
+                updateData.profilePicture = fileUrl;
+                break;
+            case 'idDocumentFront':
+                updateData.idDocumentFront = fileUrl;
+                break;
+            case 'idDocumentBack':
+                updateData.idDocumentBack = fileUrl;
+                break;
+            case 'passport':
+                updateData.passportDocument = fileUrl;
+                break;
+            case 'kra':
+                updateData.kraDocument = fileUrl;
+                break;
+            case 'goodConduct':
+                updateData.goodConductUrl = fileUrl;
+                break;
+            case 'medical':
+                updateData.medicalDocument = fileUrl;
+                break;
+        }
+
+        const kyc = await prisma.kycDetails.upsert({
             where: { userId },
-            update: {
-                currentStep,
-                completed,
-                steps: steps || undefined
-            },
+            update: updateData,
             create: {
                 userId,
-                currentStep,
-                completed,
-                steps: steps || {}
+                ...updateData
             }
         });
 
-        return NextResponse.json({ progress });
+        return NextResponse.json({
+            success: true,
+            fileUrl,
+            documentType
+        });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

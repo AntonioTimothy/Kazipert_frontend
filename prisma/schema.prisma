@@ -134,7 +134,7 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// New models for onboarding
+// Onboarding models - SINGLE DEFINITION
 model OnboardingProgress {
   id          String   @id @default(cuid())
   userId      String   @unique
@@ -155,11 +155,8 @@ model KycDetails {
   
   // Personal Details
   dateOfBirth       DateTime?
-  maritalStatus     String?
   county            String?
   physicalAddress   String?
-  emergencyContactName String?
-  emergencyContactPhone String?
   
   // Identity Details
   idNumber          String?
@@ -174,18 +171,27 @@ model KycDetails {
   languages         Json?    // Store as {english: 'fluent', arabic: 'basic'}
   
   // Documents
-  idDocumentUrl     String?
-  passportDocumentUrl String?
-  kraDocumentUrl    String?
+  profilePicture    String?
+  idDocumentFront   String?
+  idDocumentBack    String?
+  passportDocument  String?
+  kraDocument       String?
   goodConductUrl   String?
   educationCertUrl String?
   workCertUrl      String?
-  medicalDocumentUrl String?
+  medicalDocument  String?
   
-  // Verification
+  // Verification Status
+  profileVerified   Boolean @default(false)
+  idVerified        Boolean @default(false)
   faceVerified      Boolean @default(false)
-  documentsVerified Boolean @default(false)
-  kycVerified       Boolean @default(false)
+  medicalVerified   Boolean @default(false)
+  paymentVerified   Boolean @default(false)
+  
+  // Payment
+  paymentStatus     String? @default("pending")
+  mpesaNumber       String?
+  transactionCode   String?
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

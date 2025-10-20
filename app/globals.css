@@ -2,7 +2,6 @@
 @import "tw-animate-css";
 @import "react-phone-input-2/lib/style.css";
 
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -54,6 +53,20 @@
   --sidebar-accent-foreground: oklch(0.15 0.02 240);
   --sidebar-border: oklch(0.9 0.005 240);
   --sidebar-ring: oklch(0.55 0.12 195);
+
+  /* Theme System Variables - Default to Kazipert Teal Theme */
+  --color-primary: var(--primary);
+  --color-primary-light: oklch(0.85 0.08 195);
+  --color-primary-dark: oklch(0.45 0.15 195);
+  --color-background: var(--background);
+  --color-background-light: oklch(0.98 0.003 240);
+  --color-text: var(--foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-success: oklch(0.62 0.18 150);
+  --color-warning: oklch(0.8 0.18 75);
+  --color-error: var(--destructive);
 }
 
 .dark {
@@ -93,11 +106,27 @@
   --sidebar-accent-foreground: oklch(0.98 0.005 240);
   --sidebar-border: oklch(0.25 0.02 240);
   --sidebar-ring: oklch(0.6 0.12 195);
+
+  /* Dark mode theme variables */
+  --color-primary: var(--primary);
+  --color-primary-light: oklch(0.7 0.1 195);
+  --color-primary-dark: oklch(0.5 0.15 195);
+  --color-background: var(--background);
+  --color-background-light: oklch(0.15 0.01 240);
+  --color-text: var(--foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-success: oklch(0.7 0.18 150);
+  --color-warning: oklch(0.75 0.18 75);
+  --color-error: var(--destructive);
 }
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Shadcn/ui Variables */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -122,10 +151,26 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  
+  /* Theme System Variables */
+  --color-theme-primary: var(--color-primary);
+  --color-theme-primary-light: var(--color-primary-light);
+  --color-theme-primary-dark: var(--color-primary-dark);
+  --color-theme-background: var(--color-background);
+  --color-theme-background-light: var(--color-background-light);
+  --color-theme-text: var(--color-text);
+  --color-theme-text-muted: var(--color-text-muted);
+  --color-theme-border: var(--color-border);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-success: var(--color-success);
+  --color-theme-warning: var(--color-warning);
+  --color-theme-error: var(--color-error);
+  
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -142,6 +187,102 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Theme System Utility Classes */
+  .bg-theme-primary { background-color: var(--color-theme-primary); }
+  .bg-theme-primary-light { background-color: var(--color-theme-primary-light); }
+  .bg-theme-primary-dark { background-color: var(--color-theme-primary-dark); }
+  .bg-theme-background { background-color: var(--color-theme-background); }
+  .bg-theme-background-light { background-color: var(--color-theme-background-light); }
+  
+  .text-theme-primary { color: var(--color-theme-primary); }
+  .text-theme-primary-dark { color: var(--color-theme-primary-dark); }
+  .text-theme-text { color: var(--color-theme-text); }
+  .text-theme-text-muted { color: var(--color-theme-text-muted); }
+  
+  .border-theme-primary { border-color: var(--color-theme-primary); }
+  .border-theme-border { border-color: var(--color-theme-border); }
+  
+  .ring-theme-primary { --tw-ring-color: var(--color-theme-primary); }
+
+  /* Opacity-based background utilities for theme colors */
+  .bg-theme-primary\/5 { background-color: color-mix(in oklch, var(--color-theme-primary) 5%, transparent); }
+  .bg-theme-primary\/10 { background-color: color-mix(in oklch, var(--color-theme-primary) 10%, transparent); }
+  .bg-theme-primary\/15 { background-color: color-mix(in oklch, var(--color-theme-primary) 15%, transparent); }
+  .bg-theme-primary\/20 { background-color: color-mix(in oklch, var(--color-theme-primary) 20%, transparent); }
+  .bg-theme-primary\/30 { background-color: color-mix(in oklch, var(--color-theme-primary) 30%, transparent); }
+  .bg-theme-primary\/50 { background-color: color-mix(in oklch, var(--color-theme-primary) 50%, transparent); }
+  .bg-theme-primary\/80 { background-color: color-mix(in oklch, var(--color-theme-primary) 80%, transparent); }
+
+  /* Custom scrollbar for theme */
+  .scrollbar-thumb-theme-primary\/20::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--color-theme-primary) 20%, transparent);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thumb-theme-primary\/20::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklch, var(--color-theme-primary) 30%, transparent);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Ensure smooth theme transitions */
+  * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Exclude transform and opacity from transitions for performance */
+  .transform,
+  .scale-*,
+  .rotate-*,
+  .translate-*,
+  .opacity-* {
+    transition: none;
+  }
+}
+
+@layer utilities {
+  /* Gradient utilities using theme colors */
+  .bg-gradient-theme-primary {
+    background: linear-gradient(135deg, var(--color-theme-primary), var(--color-theme-primary-dark));
+  }
+  
+  .bg-gradient-theme-subtle {
+    background: linear-gradient(135deg, var(--color-theme-background), var(--color-theme-background-light));
+  }
+  
+  .bg-gradient-theme-accent {
+    background: linear-gradient(135deg, var(--color-theme-primary-light), var(--color-theme-background-light));
+  }
+
+  /* Text gradient */
+  .text-gradient-theme-primary {
+    background: linear-gradient(135deg, var(--color-theme-primary), var(--color-theme-primary-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Shadow utilities with theme colors */
+  .shadow-theme-primary {
+    box-shadow: 0 4px 14px 0 color-mix(in oklch, var(--color-theme-primary) 15%, transparent);
+  }
+  
+  .shadow-theme-primary-lg {
+    box-shadow: 0 10px 40px 0 color-mix(in oklch, var(--color-theme-primary) 20%, transparent);
+  }
+
+  /* Border glow effect */
+  .glow-theme-primary {
+    box-shadow: 0 0 20px color-mix(in oklch, var(--color-theme-primary) 30%, transparent);
   }
 }
 
@@ -199,6 +340,17 @@
   }
 }
 
+@keyframes theme-transition {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -219,4 +371,50 @@
   animation: fade-in-up 0.6s ease-out;
 }
 
+.animate-theme-transition {
+  animation: theme-transition 0.3s ease-out;
+}
 
+/* Theme-specific overrides for better compatibility */
+.theme-transitioning * {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease !important;
+}
+
+/* Print styles */
+@media print {
+  .bg-theme-primary {
+    background-color: oklch(0.55 0.12 195) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .text-theme-primary {
+    color: oklch(0.55 0.12 195) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary-light: oklch(0.7 0.15 195);
+    --color-primary-dark: oklch(0.4 0.18 195);
+    --color-border: oklch(0.3 0.05 240);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .animate-float,
+  .animate-pulse-slow,
+  .animate-theme-transition {
+    animation: none;
+  }
+}

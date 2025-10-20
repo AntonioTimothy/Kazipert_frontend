@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+// import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+// import { authOptions } from '@/lib/auth'
 
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions)
+        // const session = await getServerSession(authOptions)
 
-        if (!session) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        // if (!session) {
+        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        // }
 
-        const settings = await prisma.systemSettings.findUnique({
-            where: { userId: session.user.id }
-        })
+        // const settings = await prisma.systemSettings.findUnique({
+        //     where: { userId: session.user.id }
+        // })
 
-        const profile = await prisma.profile.findUnique({
-            where: { userId: session.user.id }
-        })
+        // const profile = await prisma.profile.findUnique({
+        //     where: { userId: session.user.id }
+        // })
 
         return NextResponse.json({
-            profile: profile || {},
-            systemSettings: settings || {}
+            profile: {},
+            systemSettings:  {}
         })
     } catch (error) {
         console.error('Error fetching settings:', error)
@@ -31,11 +31,11 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
+        // const session = await getServerSession(authOptions)
 
-        if (!session) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        // if (!session) {
+        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        // }
 
         const body = await request.json()
         const { theme, language, currency, notifications, workingHours } = body

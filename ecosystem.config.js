@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "nextjs-app",
+      name: "kazipert-system",
       script: "node_modules/next/dist/bin/next",
       args: "start",
       cwd: "./",

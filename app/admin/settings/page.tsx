@@ -101,6 +101,13 @@ const userRoles = [
     color: "bg-red-100 text-red-700"
   },
   {
+    value: "super_contractor",
+    label: "Super Contractor",
+    description: "Full system access and management",
+    icon: Shield,
+    color: "bg-red-100 text-red-700"
+  },
+  {
     value: "hospital_admin",
     label: "Hospital Admin",
     description: "Manage medical records and certifications",
