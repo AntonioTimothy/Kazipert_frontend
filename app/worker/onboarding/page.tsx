@@ -321,6 +321,12 @@ export default function WorkerOnboardingPage() {
         const result = await response.json()
         setUploadProgress(prev => ({ ...prev, [documentType]: 100 }))
 
+        if (!result.fileUrl || result.fileUrl === '') {
+          console.error('Upload failed: No file URL returned')
+          setValidationErrors([`Failed to upload ${documentType}: No file URL returned`])
+          return false
+        }
+
         const documentPropertyMap: { [key: string]: string } = {
           'profilePicture': 'profilePicture',
           'idDocumentFront': 'idDocumentFront',
@@ -734,7 +740,7 @@ export default function WorkerOnboardingPage() {
           {/* Upload Area */}
           <div
             className={cn(
-              "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer flex items-center justify-center",
+              "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer flex items-center justify-center bg-white",
               isDragging
                 ? "border-theme-primary bg-theme-primary/10"
                 : "border-theme-border hover:border-theme-primary hover:bg-theme-primary/5",
@@ -776,13 +782,17 @@ export default function WorkerOnboardingPage() {
           )}>
             {currentImage ? (
               <div className="relative group">
-                <img
-                  src={currentImage}
-                  alt="Preview"
+                <img 
+                  src={currentImage} 
+                  alt="Preview" 
                   className={cn(
-                    "object-cover rounded-lg",
+                    "object-contain rounded-lg bg-white", // Changed object-cover to object-contain and added bg-white
                     aspectRatio === "square" ? "h-20 w-20" : "h-16 w-24"
                   )}
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
                 <button
                   onClick={() => window.open(currentImage, '_blank')}
@@ -910,25 +920,30 @@ export default function WorkerOnboardingPage() {
             )}
           </div>
 
-          <div className="border-2 border-dashed border-theme-border rounded-lg p-4 h-24 flex items-center justify-center">
-            {currentFile ? (
-              <div className="text-center">
-                <FileText className="h-8 w-8 text-theme-success mx-auto mb-1" />
-                <p className="text-xs text-theme-success">Document uploaded</p>
-                <button
-                  onClick={() => window.open(currentFile, '_blank')}
-                  className="text-xs text-theme-primary hover:underline mt-1"
-                >
-                  View
-                </button>
-              </div>
-            ) : (
-              <div className="text-center text-theme-text-muted">
-                <p className="text-xs">No document uploaded</p>
-                {optional && <p className="text-xs">Optional document</p>}
-              </div>
-            )}
-          </div>
+          <div className="border-2 border-dashed border-theme-border rounded-lg p-4 h-24 flex items-center justify-center bg-white"> {/* Added bg-white */}
+  {currentFile && currentFile !== 'skipped' ? (
+    <div className="text-center">
+      <FileText className="h-8 w-8 text-theme-success mx-auto mb-1" />
+      <p className="text-xs text-theme-success">Document uploaded</p>
+      <button 
+        onClick={() => window.open(currentFile, '_blank')}
+        className="text-xs text-theme-primary hover:underline mt-1"
+      >
+        View
+      </button>
+    </div>
+  ) : currentFile === 'skipped' ? (
+    <div className="text-center text-theme-text-muted">
+      <FileText className="h-8 w-8 text-theme-text-muted mx-auto mb-1" />
+      <p className="text-xs">Skipped</p>
+    </div>
+  ) : (
+    <div className="text-center text-theme-text-muted">
+      <p className="text-xs">No document uploaded</p>
+      {optional && <p className="text-xs">Optional document</p>}
+    </div>
+  )}
+</div>
         </div>
 
         {uploadProgress[id] > 0 && uploadProgress[id] < 100 && (
