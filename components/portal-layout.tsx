@@ -7,6 +7,8 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useNavigation } from "@/hooks/useNavigation"
+
 import { 
   Menu, 
   X, 
@@ -36,7 +38,10 @@ import {
   FileText,
   Key,
   Lock,
-  Palette
+  Palette,
+  Loader2,
+  ChevronUp,
+  ChevronRight as ChevronRightIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from '@/contexts/ThemeContext'
@@ -49,6 +54,12 @@ interface PortalLayoutProps {
     href: string
     icon: React.ComponentType<{ className?: string }>
     badge?: string
+    children?: Array<{
+      name: string
+      href: string
+      icon: React.ComponentType<{ className?: string }>
+      badge?: string
+    }>
   }>
   user: {
     name: string
@@ -162,13 +173,181 @@ function ScrollableDropdownContent({ children, maxHeight = "320px" }: { children
   )
 }
 
-export function PortalLayout({ children, navigation, user, notificationCount = 3 }: PortalLayoutProps) {
+// Navigation Item Component with Nested Support
+interface NavigationItemProps {
+  item: {
+    name: string
+    href: string
+    icon: React.ComponentType<{ className?: string }>
+    badge?: string
+    children?: Array<{
+      name: string
+      href: string
+      icon: React.ComponentType<{ className?: string }>
+      badge?: string
+    }>
+  }
+  isActive: boolean
+  sidebarCollapsed: boolean
+  currentTheme: any
+  pathname: string
+  onItemClick: () => void
+}
+
+function NavigationItem({ item, isActive, sidebarCollapsed, currentTheme, pathname, onItemClick }: NavigationItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const hasChildren = item.children && item.children.length > 0
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (hasChildren && !sidebarCollapsed) {
+      e.preventDefault()
+      setIsExpanded(!isExpanded)
+    } else {
+      onItemClick()
+    }
+  }
+
+  const isChildActive = hasChildren && item.children?.some(child => child.href === pathname)
+
+  return (
+    <div className="relative group">
+      {/* Main Navigation Item */}
+      <Link
+        href={hasChildren ? '#' : item.href}
+        onClick={handleClick}
+        className={cn(
+          "flex items-center gap-3 rounded-xl p-3 text-sm font-medium transition-all duration-200 hover:scale-[1.02]",
+          isActive || isChildActive
+            ? "text-primary-foreground shadow-lg shadow-primary/20"
+            : "text-text-muted hover:bg-primary/5 hover:text-text",
+          sidebarCollapsed ? "justify-center" : "",
+          hasChildren ? "cursor-pointer" : ""
+        )}
+        style={{
+          backgroundColor: (isActive || isChildActive) ? currentTheme.colors.primary : 'transparent',
+          color: (isActive || isChildActive) ? currentTheme.colors.text : undefined
+        }}
+      >
+        <div className={cn(
+          "transition-all duration-200",
+          (isActive || isChildActive) ? "scale-110" : "group-hover:scale-110"
+        )}>
+          <item.icon className={cn(
+            "h-5 w-5 transition-colors",
+            (isActive || isChildActive) ? "text-primary-foreground" : "text-current"
+          )} />
+        </div>
+        
+        {!sidebarCollapsed && (
+          <>
+            <span className="flex-1 font-semibold text-left">{item.name}</span>
+            
+            {/* Badge and Chevron */}
+            <div className="flex items-center gap-1">
+              {item.badge && (
+                <span 
+                  className="px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[20px] text-center"
+                  style={{
+                    backgroundColor: (isActive || isChildActive) ? 'rgba(255,255,255,0.2)' : `${currentTheme.colors.primary}20`,
+                    color: (isActive || isChildActive) ? 'currentColor' : currentTheme.colors.primary
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
+              
+              {hasChildren && (
+                <ChevronRightIcon 
+                  className={cn(
+                    "h-4 w-4 transition-transform duration-300",
+                    isExpanded ? "rotate-90" : ""
+                  )} 
+                />
+              )}
+            </div>
+          </>
+        )}
+      </Link>
+
+      {/* Nested Children */}
+      {hasChildren && !sidebarCollapsed && isExpanded && (
+        <div className="ml-6 mt-1 space-y-1 border-l-2 border-primary/20 pl-2">
+          {item.children.map((child) => {
+            const isChildActive = pathname === child.href
+            return (
+              <Link
+                key={child.name}
+                href={child.href}
+                onClick={onItemClick}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg p-2 text-sm transition-all duration-200 hover:scale-[1.02]",
+                  isChildActive
+                    ? "text-primary-foreground shadow-md shadow-primary/10"
+                    : "text-text-muted hover:bg-primary/5 hover:text-text"
+                )}
+                style={{
+                  backgroundColor: isChildActive ? currentTheme.colors.primary : 'transparent',
+                  color: isChildActive ? currentTheme.colors.text : undefined
+                }}
+              >
+                <child.icon className={cn(
+                  "h-4 w-4",
+                  isChildActive ? "text-primary-foreground" : "text-current"
+                )} />
+                <span className="flex-1 font-medium text-sm">{child.name}</span>
+                {child.badge && (
+                  <span 
+                    className="px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[18px] text-center"
+                    style={{
+                      backgroundColor: isChildActive ? 'rgba(255,255,255,0.2)' : `${currentTheme.colors.primary}20`,
+                      color: isChildActive ? 'currentColor' : currentTheme.colors.primary
+                    }}
+                  >
+                    {child.badge}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Tooltip for collapsed state */}
+      {sidebarCollapsed && (
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
+          {item.name}
+          {item.badge && (
+            <span 
+              className="ml-1 px-1 rounded text-[10px] font-bold"
+              style={{
+                backgroundColor: currentTheme.colors.primary,
+                color: currentTheme.colors.text
+              }}
+            >
+              {item.badge}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function PortalLayout({ children, user, notificationCount = 3 }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showJobsPopup, setShowJobsPopup] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { currentTheme } = useTheme()
+  
+  // Dynamic navigation based on user role and permissions
+  const { 
+    navigation, 
+    getCurrentRouteName, 
+    getMobileNavigation,
+    isLoading 
+  } = useNavigation()
 
   const handleLogout = () => {
     // Clear all user data from storage
@@ -189,14 +368,34 @@ export function PortalLayout({ children, navigation, user, notificationCount = 3
     }, 100)
   }
 
-  // Get current route name for breadcrumb
-  const getCurrentRouteName = () => {
-    const currentRoute = navigation.find(item => item.href === pathname)
-    return currentRoute?.name || "Dashboard"
+  // Get flat navigation for mobile (no nested items)
+  const getFlatNavigationForMobile = () => {
+    const flatNav: any[] = []
+    navigation?.forEach(item => {
+      // Add parent item if it has a direct href
+      if (item.href !== '#') {
+        flatNav.push(item)
+      }
+      // Add all children
+      if (item.children) {
+        flatNav.push(...item.children)
+      }
+    })
+    return flatNav.slice(0, 5) // Limit to 5 items for mobile
   }
 
-  // Limit to top 5 for mobile nav - keep original order
-  const mobileNav = navigation?.slice(0, 5)
+  const mobileNav = getFlatNavigationForMobile()
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-theme-primary" />
+          <p className="text-theme-text-muted">Loading</p>
+        </div>
+      </div>
+    )
+  }
 
   // Get user initials for avatar
   const getUserInitials = (name: string | undefined | null) => {
@@ -279,67 +478,15 @@ export function PortalLayout({ children, navigation, user, notificationCount = 3
           {navigation?.map((item) => {
             const isActive = pathname === item.href
             return (
-              <div key={item.name} className="relative group">
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl p-3 text-sm font-medium transition-all duration-200 hover:scale-[1.02]",
-                    isActive
-                      ? "text-primary-foreground shadow-lg shadow-primary/20"
-                      : "text-text-muted hover:bg-primary/5 hover:text-text",
-                    sidebarCollapsed ? "justify-center" : ""
-                  )}
-                  style={{
-                    backgroundColor: isActive ? currentTheme.colors.primary : 'transparent',
-                    color: isActive ? currentTheme.colors.text : undefined
-                  }}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <div className={cn(
-                    "transition-all duration-200",
-                    isActive ? "scale-110" : "group-hover:scale-110"
-                  )}>
-                    <item.icon className={cn(
-                      "h-5 w-5 transition-colors",
-                      isActive ? "text-primary-foreground" : "text-current"
-                    )} />
-                  </div>
-                  
-                  {!sidebarCollapsed && (
-                    <span className="flex-1 font-semibold">{item.name}</span>
-                  )}
-                  
-                  {item.badge && !sidebarCollapsed && (
-                    <span 
-                      className="px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[20px] text-center"
-                      style={{
-                        backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : `${currentTheme.colors.primary}20`,
-                        color: isActive ? 'currentColor' : currentTheme.colors.primary
-                      }}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-
-                {/* Tooltip for collapsed state */}
-                {sidebarCollapsed && (
-                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
-                    {item.name}
-                    {item.badge && (
-                      <span 
-                        className="ml-1 px-1 rounded text-[10px] font-bold"
-                        style={{
-                          backgroundColor: currentTheme.colors.primary,
-                          color: currentTheme.colors.text
-                        }}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+              <NavigationItem
+                key={item.name}
+                item={item}
+                isActive={isActive}
+                sidebarCollapsed={sidebarCollapsed}
+                currentTheme={currentTheme}
+                pathname={pathname}
+                onItemClick={() => setSidebarOpen(false)}
+              />
             )
           })}
 
@@ -646,7 +793,7 @@ export function PortalLayout({ children, navigation, user, notificationCount = 3
                           <span className="font-semibold text-text text-sm">My Profile</span>
                           <p className="text-xs text-text-muted">View and edit your profile</p>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-primary/60" />
+                        <ChevronRightIcon className="h-4 w-4 text-primary/60" />
                       </div>
                     </CustomDropdownItem>
 

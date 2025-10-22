@@ -65,12 +65,12 @@ function OtpInput({ onComplete }: { onComplete: (code: string) => void }) {
 
   const handleChange = (i: number, v: string) => {
     if (!/^\d*$/.test(v)) return;
-    
+
     const next = [...values];
     next[i] = v.slice(-1);
     setValues(next);
     setHasCompleted(false);
-    
+
     if (v && i < length - 1) {
       const el = document.getElementById(`login-otp-${i + 1}`) as HTMLInputElement | null;
       el?.focus();
@@ -112,7 +112,7 @@ export default function LoginPage() {
   const [otpStep, setOtpStep] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
-  
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -191,7 +191,7 @@ export default function LoginPage() {
     const frontendUserType = mapBackendRoleToFrontend(data.user.role);
 
     let decorateUserData = decorateUserTemp(frontendUserType)
-    
+
     // Create user object in the format your dashboards expect
     const user = {
       ...decorateUserData,
@@ -201,7 +201,7 @@ export default function LoginPage() {
       name: data.user.fullName || data.user.email,
       role: frontendUserType,
       type: frontendUserType,
-      
+
     };
 
     console.log("Decorated User Data:", user);
@@ -216,9 +216,9 @@ export default function LoginPage() {
     }
 
     setSuccess("Login successful! Redirecting...");
-    
+
     console.log("Login successful, user role:", user.role);
-    
+
     // Redirect based on mapped user type (EXACTLY like your old logic)
 
     setTimeout(() => {
@@ -237,15 +237,15 @@ export default function LoginPage() {
         // router.push("/dashboard");
         setError("Your Account could not be validated properly. Please contact support.");
       }
-    }, 600);
+    }, 200);
   };
 
   const handleVerifyOtp = useCallback(async (code: string) => {
     if (!pendingEmail || isVerifying) return;
-    
+
     setIsVerifying(true);
     setLoading(true);
-    
+
     try {
       const res = await fetch("/api/auth/verify-login-otp", {
         method: "POST",
@@ -264,10 +264,10 @@ export default function LoginPage() {
       }
 
       setSuccess("Login successful! Redirecting...");
-      
+
       // Use the role-based redirection logic
       handleSuccessfulLogin(data);
-      
+
     } catch (err: any) {
       setError(err.message || "Verification failed");
     } finally {
@@ -278,7 +278,7 @@ export default function LoginPage() {
 
   const resendOtp = async () => {
     if (!pendingEmail) return;
-    
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/send-login-otp", {
@@ -289,7 +289,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to resend code");
-      
+
       setSuccess("Verification code resent successfully");
     } catch (err: any) {
       setError(err.message || "Failed to resend code");
@@ -335,8 +335,8 @@ export default function LoginPage() {
               })()}
             </div>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             className="text-3xl font-bold text-white mb-4 leading-tight"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -344,8 +344,8 @@ export default function LoginPage() {
           >
             {slides[slide].title}
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             className="text-white/90 leading-relaxed mb-6"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -354,7 +354,7 @@ export default function LoginPage() {
             {slides[slide].desc}
           </motion.p>
 
-          <motion.div 
+          <motion.div
             className="flex flex-wrap justify-center gap-4"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -375,9 +375,8 @@ export default function LoginPage() {
               <button
                 key={i}
                 onClick={() => setSlide(i)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  i === slide ? "bg-[#FFD700] scale-125" : "bg-white/50"
-                }`}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${i === slide ? "bg-[#FFD700] scale-125" : "bg-white/50"
+                  }`}
               />
             ))}
           </div>
@@ -391,11 +390,11 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <div className="flex flex-col items-center justify-center gap-3 mb-6">
               <div className="relative">
-                <Image 
-                  src="/logo.svg" 
-                  width={160} 
-                  height={160} 
-                  alt="logo" 
+                <Image
+                  src="/logo.svg"
+                  width={160}
+                  height={160}
+                  alt="logo"
                   className="drop-shadow"
                   priority
                 />

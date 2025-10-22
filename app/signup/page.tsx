@@ -20,6 +20,8 @@ import {
   Lock,
   Star,
   Workflow,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -162,6 +164,8 @@ export default function SignupPage() {
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [pendingPhone, setPendingPhone] = useState<string | null>(null);
   const [verificationStep, setVerificationStep] = useState<"email" | "phone" | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [role, setRole] = useState<"EMPLOYEE" | "EMPLOYER">("EMPLOYEE");
   const [form, setForm] = useState({
@@ -211,6 +215,11 @@ export default function SignupPage() {
     if (!canNext()) {
       if (step === 2) return setError("Please enter a valid phone number");
       if (step === 3) return setError("Please enter a valid email address");
+      if (step === 4) {
+        if (form.password.length < 8) return setError("Password must be at least 8 characters");
+        if (form.password !== form.confirmPassword) return setError("Passwords do not match");
+        return setError("Please complete all required fields.");
+      }
       return setError("Please complete all required fields.");
     }
 
@@ -225,7 +234,10 @@ export default function SignupPage() {
           body: JSON.stringify({ phone: form.phone }),
         });
         
-        if (!res.ok) throw new Error("Failed to send verification code");
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || data.message || "Failed to send verification code");
+        }
         
         setPendingPhone(form.phone);
         setVerificationStep("phone");
@@ -247,7 +259,10 @@ export default function SignupPage() {
           body: JSON.stringify({ email: form.email }),
         });
         
-        if (!res.ok) throw new Error("Failed to send verification code");
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || data.message || "Failed to send verification code");
+        }
         
         setPendingEmail(form.email);
         setVerificationStep("email");
@@ -291,7 +306,9 @@ export default function SignupPage() {
       });
       
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Invalid verification code");
+      if (!res.ok) {
+        throw new Error(json.error || json.message || "Invalid verification code");
+      }
       
       setSuccess(`${verificationStep === "email" ? "Email" : "Phone"} verified successfully!`);
       setVerificationStep(null);
@@ -316,11 +333,16 @@ export default function SignupPage() {
         ? { email: form.email }
         : { phone: form.phone };
 
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Failed to resend code");
+      }
       
       setSuccess("Verification code resent successfully");
     } catch (err: any) {
@@ -350,7 +372,9 @@ export default function SignupPage() {
       });
       
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Signup failed");
+      if (!res.ok) {
+        throw new Error(json.error || json.message || "Signup failed");
+      }
       
       setSuccess("Account created successfully! Redirecting to login...");
       setTimeout(() => router.push("/login"), 1000);
@@ -514,9 +538,6 @@ export default function SignupPage() {
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#FFD700] rounded-full border-2 border-white shadow"></div>
               </div>
               <div className="space-y-1">
-                {/* <h1 className="text-xl font-bold text-gray-900">
-                  Join Kazipert
-                </h1> */}
                 <p className="text-sm text-gray-600">
                   Create your secure account
                 </p>
@@ -750,13 +771,22 @@ export default function SignupPage() {
 
                   <div>
                     <Label className="text-sm font-medium text-gray-700 mb-2 block">Password</Label>
-                    <Input
-                      type="password"
-                      value={form.password}
-                      placeholder="Create a strong password"
-                      onChange={(e) => updateField("password", e.target.value)}
-                      className="h-11 rounded-lg border-gray-300 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700] transition-all duration-200"
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        value={form.password}
+                        placeholder="Create a strong password"
+                        onChange={(e) => updateField("password", e.target.value)}
+                        className="h-11 rounded-lg border-gray-300 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700] transition-all duration-200 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-500 mt-2">
                       Must be at least 8 characters
                     </p>
@@ -764,13 +794,22 @@ export default function SignupPage() {
                   
                   <div>
                     <Label className="text-sm font-medium text-gray-700 mb-2 block">Confirm Password</Label>
-                    <Input
-                      type="password"
-                      value={form.confirmPassword}
-                      placeholder="Re-enter your password"
-                      onChange={(e) => updateField("confirmPassword", e.target.value)}
-                      className="h-11 rounded-lg border-gray-300 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700] transition-all duration-200"
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={form.confirmPassword}
+                        placeholder="Re-enter your password"
+                        onChange={(e) => updateField("confirmPassword", e.target.value)}
+                        className="h-11 rounded-lg border-gray-300 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700] transition-all duration-200 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

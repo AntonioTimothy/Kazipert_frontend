@@ -112,16 +112,21 @@ interface OnboardingData {
     mpesaNumber: string
     payLater: boolean
   }
+  terms: {
+    accuracy: boolean
+    terms: boolean
+    consent: boolean
+  }
 }
 
 // Kenya counties data
 const kenyaCounties = [
-  "Mombasa", "Kwale", "Kilifi", "Tana River", "Lamu", "Taita-Taveta", "Garissa", 
-  "Wajir", "Mandera", "Marsabit", "Isiolo", "Meru", "Tharaka-Nithi", "Embu", 
-  "Kitui", "Machakos", "Makueni", "Nyandarua", "Nyeri", "Kirinyaga", "Murang'a", 
-  "Kiambu", "Turkana", "West Pokot", "Samburu", "Trans Nzoia", "Uasin Gishu", 
-  "Elgeyo-Marakwet", "Nandi", "Baringo", "Laikipia", "Nakuru", "Narok", "Kajiado", 
-  "Kericho", "Bomet", "Kakamega", "Vihiga", "Bungoma", "Busia", "Siaya", "Kisumu", 
+  "Mombasa", "Kwale", "Kilifi", "Tana River", "Lamu", "Taita-Taveta", "Garissa",
+  "Wajir", "Mandera", "Marsabit", "Isiolo", "Meru", "Tharaka-Nithi", "Embu",
+  "Kitui", "Machakos", "Makueni", "Nyandarua", "Nyeri", "Kirinyaga", "Murang'a",
+  "Kiambu", "Turkana", "West Pokot", "Samburu", "Trans Nzoia", "Uasin Gishu",
+  "Elgeyo-Marakwet", "Nandi", "Baringo", "Laikipia", "Nakuru", "Narok", "Kajiado",
+  "Kericho", "Bomet", "Kakamega", "Vihiga", "Bungoma", "Busia", "Siaya", "Kisumu",
   "Homa Bay", "Migori", "Kisii", "Nyamira", "Nairobi"
 ].sort()
 
@@ -137,14 +142,24 @@ export default function WorkerOnboardingPage() {
   const { currentTheme } = useTheme()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedFileNames, setSelectedFileNames] = useState<{[key: string]: string}>({})
+  const [selectedFileNames, setSelectedFileNames] = useState<{ [key: string]: string }>({})
   const [saving, setSaving] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
-  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({})
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
   const [showCountyModal, setShowCountyModal] = useState(false)
   const [countrySearch, setCountrySearch] = useState("")
   const [showCountriesModal, setShowCountriesModal] = useState(false)
+
+
+  // Add this function after the useEffect hooks and before the loadUserProgress function
+  const validateAge = (dateString: string): boolean => {
+    if (!dateString) return false
+    const birthDate = new Date(dateString)
+    const today = new Date()
+    const minAgeDate = new Date(today.getFullYear() - 22, today.getMonth(), today.getDate())
+    return birthDate <= minAgeDate
+  }
 
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     personalInfo: {
@@ -190,6 +205,11 @@ export default function WorkerOnboardingPage() {
     payment: {
       mpesaNumber: "",
       payLater: false
+    },
+    terms: {
+      accuracy: false,
+      terms: false,
+      consent: false
     }
   })
 
@@ -234,7 +254,7 @@ export default function WorkerOnboardingPage() {
     try {
       const response = await fetch(`/api/onboarding/progress?userId=${userId}`)
       const data = await response.json()
-      
+
       if (data.progress) {
         setCurrentStep(data.progress.currentStep)
         if (data.progress.kycDetails) {
@@ -253,7 +273,7 @@ export default function WorkerOnboardingPage() {
 
   const saveProgress = async (step: number, data?: any) => {
     if (!user) return
-    
+
     try {
       setSaving(true)
       const response = await fetch('/api/onboarding/kyc', {
@@ -265,7 +285,7 @@ export default function WorkerOnboardingPage() {
           ...data
         })
       })
-      
+
       if (!response.ok) throw new Error('Failed to save progress')
     } catch (error) {
       console.error('Failed to save progress:', error)
@@ -286,7 +306,7 @@ export default function WorkerOnboardingPage() {
 
     try {
       setUploadProgress(prev => ({ ...prev, [documentType]: 0 }))
-      
+
       const formData = new FormData()
       formData.append('file', file)
       formData.append('userId', user.id)
@@ -300,10 +320,10 @@ export default function WorkerOnboardingPage() {
       if (response.ok) {
         const result = await response.json()
         setUploadProgress(prev => ({ ...prev, [documentType]: 100 }))
-        
+
         const documentPropertyMap: { [key: string]: string } = {
           'profilePicture': 'profilePicture',
-          'idDocumentFront': 'idDocumentFront', 
+          'idDocumentFront': 'idDocumentFront',
           'idDocumentBack': 'idDocumentBack',
           'passport': 'passportDocument',
           'kra': 'kraDocument',
@@ -322,7 +342,7 @@ export default function WorkerOnboardingPage() {
             }
           }))
         }
-        
+
         return true
       }
       return false
@@ -334,26 +354,30 @@ export default function WorkerOnboardingPage() {
 
   const validateStep = (step: number): boolean => {
     const errors: string[] = []
-    
+
     switch (step) {
       case 1: // Instructions
-        // Check if all checkboxes are checked
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]')
-        const allChecked = Array.from(checkboxes).every((checkbox: any) => checkbox.checked)
-        if (!allChecked) errors.push("Please agree to all terms and conditions")
+        // Check if all required checkboxes are checked
+        if (!onboardingData.terms.accuracy) errors.push("Please attest that all information provided is accurate")
+        if (!onboardingData.terms.terms) errors.push("Please agree to the Terms of Service and Privacy Policy")
+        if (!onboardingData.terms.consent) errors.push("Please consent to document verification and background checks")
         break
-        
+
       case 2: // Personal Info
-        if (!onboardingData.personalInfo.dateOfBirth) errors.push("Date of birth is required")
+        if (!onboardingData.personalInfo.dateOfBirth) {
+          errors.push("Date of birth is required")
+        } else if (!validateAge(onboardingData.personalInfo.dateOfBirth)) {
+          errors.push("You must be at least 22 years old") // CHANGED FROM 18 TO 22
+        }
         if (!onboardingData.personalInfo.county) errors.push("County is required")
         if (!onboardingData.personalInfo.physicalAddress) errors.push("Physical address is required")
         break
-        
+
       case 3: // KYC Details
         if (!onboardingData.kycDetails.idNumber) errors.push("National ID number is required")
         if (!onboardingData.kycDetails.maritalStatus) errors.push("Marital status is required")
         if (!onboardingData.kycDetails.hasChildren) errors.push("Please indicate if you have children")
-        if (onboardingData.kycDetails.hasChildren === "yes" && onboardingData.kycDetails.numberOfChildren === 0) 
+        if (onboardingData.kycDetails.hasChildren === "yes" && onboardingData.kycDetails.numberOfChildren === 0)
           errors.push("Please specify number of children")
         if (!onboardingData.kycDetails.workedAbroad) errors.push("Please indicate if you've worked outside Kenya")
         if (!onboardingData.kycDetails.workExperience) errors.push("Work experience is required")
@@ -361,19 +385,19 @@ export default function WorkerOnboardingPage() {
         if (!onboardingData.kycDetails.languages.english) errors.push("English level is required")
         if (!onboardingData.kycDetails.languages.swahili) errors.push("Swahili level is required")
         break
-        
+
       case 4: // Documents
         if (!onboardingData.documents.profilePicture) errors.push("Profile picture is required")
         if (!onboardingData.documents.idDocumentFront) errors.push("National ID front is required")
         if (!onboardingData.documents.idDocumentBack) errors.push("National ID back is required")
         break
-        
+
       case 7: // Payment
-        if (!onboardingData.payment.payLater && !onboardingData.payment.mpesaNumber) 
+        if (!onboardingData.payment.payLater && !onboardingData.payment.mpesaNumber)
           errors.push("MPesa number is required or select 'I will pay later'")
         break
     }
-    
+
     setValidationErrors(errors)
     return errors.length === 0
   }
@@ -405,7 +429,7 @@ export default function WorkerOnboardingPage() {
 
   const simulateFaceVerification = async () => {
     if (!user) return
-    
+
     setSaving(true)
     try {
       const response = await fetch('/api/onboarding/face-verification', {
@@ -413,7 +437,7 @@ export default function WorkerOnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id })
       })
-      
+
       const result = await response.json()
       setOnboardingData(prev => ({
         ...prev,
@@ -431,18 +455,18 @@ export default function WorkerOnboardingPage() {
 
   const processPayment = async () => {
     if (!user || !onboardingData.payment.mpesaNumber) return
-    
+
     setSaving(true)
     try {
       const response = await fetch('/api/onboarding/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           userId: user.id,
           mpesaNumber: onboardingData.payment.mpesaNumber
         })
       })
-      
+
       const result = await response.json()
       if (!result.success) {
         setValidationErrors([result.error])
@@ -483,7 +507,7 @@ export default function WorkerOnboardingPage() {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto">
             {kenyaCounties.map((county) => (
@@ -545,7 +569,7 @@ export default function WorkerOnboardingPage() {
               <X className="h-5 w-5" />
             </Button>
           </div>
-          
+
           <div className="p-4 border-b border-theme-border">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-theme-text-muted" />
@@ -557,7 +581,7 @@ export default function WorkerOnboardingPage() {
               />
             </div>
           </div>
-          
+
           <div className="p-4 max-h-[40vh] overflow-y-auto">
             <div className="space-y-2">
               {filteredCountries.map((country) => (
@@ -586,9 +610,9 @@ export default function WorkerOnboardingPage() {
               ))}
             </div>
           </div>
-          
+
           <div className="p-4 border-t border-theme-border">
-            <Button 
+            <Button
               onClick={() => setShowCountriesModal(false)}
               className="w-full"
               style={{ backgroundColor: currentTheme.colors.primary }}
@@ -610,7 +634,7 @@ export default function WorkerOnboardingPage() {
             const isCompleted = completedSteps.includes(stepNumber)
             const isCurrent = step === stepNumber
             const isIncomplete = stepNumber > step && !isCompleted
-            
+
             return (
               <Fragment key={i}>
                 <div className="flex flex-col items-center z-10">
@@ -621,10 +645,10 @@ export default function WorkerOnboardingPage() {
                       isCompleted
                         ? "bg-theme-success border-theme-success text-white shadow-md"
                         : isCurrent
-                        ? `border-theme-primary bg-theme-background text-theme-text`
-                        : isIncomplete
-                        ? "border-theme-error/30 bg-theme-error/10 text-theme-error"
-                        : "border-theme-border bg-theme-background text-theme-text-muted"
+                          ? `border-theme-primary bg-theme-background text-theme-text`
+                          : isIncomplete
+                            ? "border-theme-error/30 bg-theme-error/10 text-theme-error"
+                            : "border-theme-border bg-theme-background text-theme-text-muted"
                     )}
                     style={{
                       borderColor: isCurrent ? currentTheme.colors.primary : undefined,
@@ -636,20 +660,20 @@ export default function WorkerOnboardingPage() {
                   <span className={cn(
                     "text-xs font-medium transition-colors mt-1 text-center",
                     isCompleted ? "text-theme-success" :
-                    isCurrent ? "text-theme-text" :
-                    isIncomplete ? "text-theme-error" :
-                    "text-theme-text-muted"
+                      isCurrent ? "text-theme-text" :
+                        isIncomplete ? "text-theme-error" :
+                          "text-theme-text-muted"
                   )}>
                     {s.title}
                   </span>
                 </div>
-                
+
                 {i < totalSteps - 1 && (
                   <div className={cn(
                     "flex-1 h-1 mx-1 transition-all duration-500",
                     isCompleted ? "bg-theme-success" :
-                    stepNumber < step ? "bg-theme-primary" :
-                    "bg-theme-border"
+                      stepNumber < step ? "bg-theme-primary" :
+                        "bg-theme-border"
                   )} />
                 )}
               </Fragment>
@@ -660,10 +684,10 @@ export default function WorkerOnboardingPage() {
     )
   }
 
-  const ImageUploadWithPreview = ({ 
-    id, 
-    label, 
-    required, 
+  const ImageUploadWithPreview = ({
+    id,
+    label,
+    required,
     currentImage,
     onFileSelect,
     aspectRatio = "square",
@@ -705,14 +729,14 @@ export default function WorkerOnboardingPage() {
         <Label htmlFor={id} className="text-sm font-semibold text-theme-text">
           {label} {required && "*"}
         </Label>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Upload Area */}
           <div
             className={cn(
               "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer flex items-center justify-center",
-              isDragging 
-                ? "border-theme-primary bg-theme-primary/10" 
+              isDragging
+                ? "border-theme-primary bg-theme-primary/10"
                 : "border-theme-border hover:border-theme-primary hover:bg-theme-primary/5",
               isUploading && "opacity-50 cursor-not-allowed",
               aspectRatio === "square" ? "h-32" : "h-24"
@@ -730,7 +754,7 @@ export default function WorkerOnboardingPage() {
               className="hidden"
               disabled={isUploading}
             />
-            
+
             {isUploading ? (
               <div className="flex flex-col items-center">
                 <Loader2 className="h-6 w-6 animate-spin text-theme-primary mb-2" />
@@ -752,9 +776,9 @@ export default function WorkerOnboardingPage() {
           )}>
             {currentImage ? (
               <div className="relative group">
-                <img 
-                  src={currentImage} 
-                  alt="Preview" 
+                <img
+                  src={currentImage}
+                  alt="Preview"
                   className={cn(
                     "object-cover rounded-lg",
                     aspectRatio === "square" ? "h-20 w-20" : "h-16 w-24"
@@ -788,7 +812,7 @@ export default function WorkerOnboardingPage() {
             )}
           </div>
         </div>
-        
+
         {uploadProgress[id] > 0 && uploadProgress[id] < 100 && (
           <Progress value={uploadProgress[id]} className="h-1" />
         )}
@@ -796,9 +820,9 @@ export default function WorkerOnboardingPage() {
     )
   }
 
-  const DocumentUploadField = ({ 
-    id, 
-    label, 
+  const DocumentUploadField = ({
+    id,
+    label,
     required,
     optional = false,
     currentFile,
@@ -865,7 +889,7 @@ export default function WorkerOnboardingPage() {
               className="hidden"
               disabled={isUploading}
             />
-            
+
             {isUploading ? (
               <div className="flex flex-col items-center">
                 <Loader2 className="h-6 w-6 animate-spin text-theme-primary mb-2" />
@@ -891,7 +915,7 @@ export default function WorkerOnboardingPage() {
               <div className="text-center">
                 <FileText className="h-8 w-8 text-theme-success mx-auto mb-1" />
                 <p className="text-xs text-theme-success">Document uploaded</p>
-                <button 
+                <button
                   onClick={() => window.open(currentFile, '_blank')}
                   className="text-xs text-theme-primary hover:underline mt-1"
                 >
@@ -978,7 +1002,7 @@ export default function WorkerOnboardingPage() {
               {(() => {
                 const StepIcon = steps[currentStep - 1].icon
                 return (
-                  <div 
+                  <div
                     className="h-10 w-10 rounded-lg border-2 flex items-center justify-center"
                     style={{
                       backgroundColor: `${currentTheme.colors.primary}20`,
@@ -1009,7 +1033,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 1: Instructions */}
                 {currentStep === 1 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1065,7 +1089,7 @@ export default function WorkerOnboardingPage() {
                         </Card>
                       </div>
 
-                      <Card 
+                      <Card
                         className="border-2"
                         style={{
                           borderColor: `${currentTheme.colors.primary}30`,
@@ -1077,20 +1101,38 @@ export default function WorkerOnboardingPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <div className="flex items-start space-x-3">
-                            <Checkbox id="accuracy" />
+                            <Checkbox
+                              id="accuracy"
+                              checked={onboardingData.terms.accuracy}
+                              onCheckedChange={(checked) =>
+                                updateOnboardingData('terms', { accuracy: checked as boolean })
+                              }
+                            />
                             <label htmlFor="accuracy" className="text-sm cursor-pointer text-theme-text">
                               I attest that all information provided is accurate and truthful to the best of my knowledge.
                             </label>
                           </div>
                           <div className="flex items-start space-x-3">
-                            <Checkbox id="terms" />
+                            <Checkbox
+                              id="terms"
+                              checked={onboardingData.terms.terms}
+                              onCheckedChange={(checked) =>
+                                updateOnboardingData('terms', { terms: checked as boolean })
+                              }
+                            />
                             <label htmlFor="terms" className="text-sm cursor-pointer text-theme-text">
                               I agree to the <a href="/terms" className="text-theme-primary hover:underline">Terms of Service</a> and{" "}
                               <a href="/privacy" className="text-theme-primary hover:underline">Privacy Policy</a>.
                             </label>
                           </div>
                           <div className="flex items-start space-x-3">
-                            <Checkbox id="consent" />
+                            <Checkbox
+                              id="consent"
+                              checked={onboardingData.terms.consent}
+                              onCheckedChange={(checked) =>
+                                updateOnboardingData('terms', { consent: checked as boolean })
+                              }
+                            />
                             <label htmlFor="consent" className="text-sm cursor-pointer text-theme-text">
                               I consent to the verification of my documents and background checks as required for employment in Oman.
                             </label>
@@ -1104,7 +1146,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 2: Personal Information */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1202,7 +1244,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 3: KYC Details */}
                 {currentStep === 3 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1290,7 +1332,7 @@ export default function WorkerOnboardingPage() {
                           </Label>
                           <Select
                             value={onboardingData.kycDetails.hasChildren}
-                            onValueChange={(value) => updateOnboardingData('kycDetails', { 
+                            onValueChange={(value) => updateOnboardingData('kycDetails', {
                               hasChildren: value,
                               numberOfChildren: value === "no" ? 0 : onboardingData.kycDetails.numberOfChildren
                             })}
@@ -1316,7 +1358,7 @@ export default function WorkerOnboardingPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-9 w-9 border-theme-border"
-                                onClick={() => updateOnboardingData('kycDetails', { 
+                                onClick={() => updateOnboardingData('kycDetails', {
                                   numberOfChildren: Math.max(0, onboardingData.kycDetails.numberOfChildren - 1)
                                 })}
                               >
@@ -1327,7 +1369,7 @@ export default function WorkerOnboardingPage() {
                                 min="0"
                                 className="h-9 text-center border-theme-border"
                                 value={onboardingData.kycDetails.numberOfChildren}
-                                onChange={(e) => updateOnboardingData('kycDetails', { 
+                                onChange={(e) => updateOnboardingData('kycDetails', {
                                   numberOfChildren: parseInt(e.target.value) || 0
                                 })}
                               />
@@ -1336,7 +1378,7 @@ export default function WorkerOnboardingPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-9 w-9 border-theme-border"
-                                onClick={() => updateOnboardingData('kycDetails', { 
+                                onClick={() => updateOnboardingData('kycDetails', {
                                   numberOfChildren: onboardingData.kycDetails.numberOfChildren + 1
                                 })}
                               >
@@ -1354,7 +1396,7 @@ export default function WorkerOnboardingPage() {
                         </Label>
                         <Select
                           value={onboardingData.kycDetails.workedAbroad}
-                          onValueChange={(value) => updateOnboardingData('kycDetails', { 
+                          onValueChange={(value) => updateOnboardingData('kycDetails', {
                             workedAbroad: value,
                             countriesWorked: value === "no" ? [] : onboardingData.kycDetails.countriesWorked
                           })}
@@ -1424,7 +1466,7 @@ export default function WorkerOnboardingPage() {
                         <Label className="text-sm font-semibold text-theme-text">Skills & Expertise *</Label>
                         <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
                           {[
-                            "House Cleaning", "Cooking", "Childcare", "Elderly Care", 
+                            "House Cleaning", "Cooking", "Childcare", "Elderly Care",
                             "Laundry & Ironing", "Pet Care", "Gardening", "Driving",
                             "First Aid", "Swimming", "Tutoring", "House Management"
                           ].map((skill) => (
@@ -1460,7 +1502,7 @@ export default function WorkerOnboardingPage() {
                             <Label htmlFor="english" className="text-xs text-theme-text">English Level</Label>
                             <Select
                               value={onboardingData.kycDetails.languages.english}
-                              onValueChange={(value) => updateOnboardingData('kycDetails', { 
+                              onValueChange={(value) => updateOnboardingData('kycDetails', {
                                 languages: { ...onboardingData.kycDetails.languages, english: value }
                               })}
                             >
@@ -1478,7 +1520,7 @@ export default function WorkerOnboardingPage() {
                             <Label htmlFor="swahili" className="text-xs text-theme-text">Swahili Level</Label>
                             <Select
                               value={onboardingData.kycDetails.languages.swahili}
-                              onValueChange={(value) => updateOnboardingData('kycDetails', { 
+                              onValueChange={(value) => updateOnboardingData('kycDetails', {
                                 languages: { ...onboardingData.kycDetails.languages, swahili: value }
                               })}
                             >
@@ -1497,7 +1539,7 @@ export default function WorkerOnboardingPage() {
                             <Label htmlFor="arabic" className="text-xs text-theme-text">Arabic Level</Label>
                             <Select
                               value={onboardingData.kycDetails.languages.arabic}
-                              onValueChange={(value) => updateOnboardingData('kycDetails', { 
+                              onValueChange={(value) => updateOnboardingData('kycDetails', {
                                 languages: { ...onboardingData.kycDetails.languages, arabic: value }
                               })}
                             >
@@ -1522,7 +1564,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 4: Documents */}
                 {currentStep === 4 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1623,7 +1665,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 5: Face Verification */}
                 {currentStep === 5 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1653,9 +1695,9 @@ export default function WorkerOnboardingPage() {
                         <CardContent>
                           {onboardingData.documents.profilePicture ? (
                             <div className="aspect-square rounded-lg border-2 border-theme-primary/30 overflow-hidden">
-                              <img 
-                                src={onboardingData.documents.profilePicture} 
-                                alt="Profile" 
+                              <img
+                                src={onboardingData.documents.profilePicture}
+                                alt="Profile"
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -1678,9 +1720,9 @@ export default function WorkerOnboardingPage() {
                         <CardContent>
                           {onboardingData.documents.idDocumentFront ? (
                             <div className="aspect-[4/3] rounded-lg border-2 border-theme-primary/30 overflow-hidden">
-                              <img 
-                                src={onboardingData.documents.idDocumentFront} 
-                                alt="ID" 
+                              <img
+                                src={onboardingData.documents.idDocumentFront}
+                                alt="ID"
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -1693,7 +1735,7 @@ export default function WorkerOnboardingPage() {
                       </Card>
                     </div>
 
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-6 text-center"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1727,13 +1769,13 @@ export default function WorkerOnboardingPage() {
                               />
                             ))}
                           </div>
-                          
+
                           <p className="text-lg font-semibold text-theme-text">Ready for Face Verification</p>
                           <p className="text-sm text-theme-text-muted mb-4">
                             Click the button below to start the facial recognition process.
                           </p>
-                          
-                          <Button 
+
+                          <Button
                             onClick={simulateFaceVerification}
                             disabled={saving || !onboardingData.documents.profilePicture || !onboardingData.documents.idDocumentFront}
                             className="text-white"
@@ -1751,7 +1793,7 @@ export default function WorkerOnboardingPage() {
                               </>
                             )}
                           </Button>
-                          
+
                           {(!onboardingData.documents.profilePicture || !onboardingData.documents.idDocumentFront) && (
                             <p className="text-sm text-theme-error mt-2">
                               Please upload both profile picture and ID document first.
@@ -1766,7 +1808,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 6: Photo Studio */}
                 {currentStep === 6 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1835,7 +1877,7 @@ export default function WorkerOnboardingPage() {
                       </CardContent>
                     </Card>
 
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.success}30`,
@@ -1847,7 +1889,7 @@ export default function WorkerOnboardingPage() {
                         <div>
                           <h3 className="font-semibold text-theme-success mb-1">Cost: KES 0</h3>
                           <p className="text-theme-text-muted text-sm">
-                            The professional photo session is completely free as part of your verification process. 
+                            The professional photo session is completely free as part of your verification process.
                             This ensures we have high-quality photos for your profile that meet international standards.
                           </p>
                         </div>
@@ -1859,7 +1901,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 7: Payment */}
                 {currentStep === 7 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.primary}30`,
@@ -1967,7 +2009,7 @@ export default function WorkerOnboardingPage() {
                                 disabled={onboardingData.payment.payLater}
                               />
                             </div>
-                            <Button 
+                            <Button
                               onClick={processPayment}
                               disabled={saving || !onboardingData.payment.mpesaNumber || onboardingData.payment.payLater}
                               className="h-10 px-6 text-white text-base"
@@ -1990,11 +2032,11 @@ export default function WorkerOnboardingPage() {
                       </div>
 
                       <div className="flex items-start space-x-3 rounded-lg border-2 p-4 border-theme-border">
-                        <Checkbox 
+                        <Checkbox
                           id="payLater"
                           checked={onboardingData.payment.payLater}
                           onCheckedChange={(checked) => {
-                            updateOnboardingData('payment', { 
+                            updateOnboardingData('payment', {
                               payLater: checked as boolean,
                               mpesaNumber: checked ? "" : onboardingData.payment.mpesaNumber
                             })
@@ -2003,7 +2045,7 @@ export default function WorkerOnboardingPage() {
                         <label htmlFor="payLater" className="text-sm cursor-pointer text-theme-text flex-1">
                           <span className="font-medium">I will pay later</span>
                           <p className="text-theme-text-muted mt-1">
-                            I understand that I need to complete this payment before I can be matched with international employers. 
+                            I understand that I need to complete this payment before I can be matched with international employers.
                             I can continue browsing local opportunities in the meantime.
                           </p>
                         </label>
@@ -2027,7 +2069,7 @@ export default function WorkerOnboardingPage() {
                 {/* Step 8: Summary */}
                 {currentStep === 8 && (
                   <div className="space-y-6">
-                    <div 
+                    <div
                       className="rounded-lg border-2 p-4"
                       style={{
                         borderColor: `${currentTheme.colors.success}30`,
@@ -2109,16 +2151,16 @@ export default function WorkerOnboardingPage() {
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-theme-text">Documents</span>
                             <Badge variant={
-                              onboardingData.documents.profilePicture && 
-                              onboardingData.documents.idDocumentFront && 
-                              onboardingData.documents.idDocumentBack 
-                                ? "default" 
+                              onboardingData.documents.profilePicture &&
+                                onboardingData.documents.idDocumentFront &&
+                                onboardingData.documents.idDocumentBack
+                                ? "default"
                                 : "secondary"
                             }>
-                              {onboardingData.documents.profilePicture && 
-                               onboardingData.documents.idDocumentFront && 
-                               onboardingData.documents.idDocumentBack 
-                                ? "Uploaded" 
+                              {onboardingData.documents.profilePicture &&
+                                onboardingData.documents.idDocumentFront &&
+                                onboardingData.documents.idDocumentBack
+                                ? "Uploaded"
                                 : "Incomplete"
                               }
                             </Badge>
@@ -2207,7 +2249,7 @@ export default function WorkerOnboardingPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
-              
+
               {currentStep < totalSteps ? (
                 <Button
                   onClick={nextStep}
