@@ -55,6 +55,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useTheme } from '@/contexts/ThemeContext'
+import { toast } from "sonner"
 
 const navigation = [
   { name: "Dashboard", href: "/worker/dashboard", icon: Home },
@@ -150,7 +151,8 @@ export default function WorkerOnboardingPage() {
   const [showCountyModal, setShowCountyModal] = useState(false)
   const [countrySearch, setCountrySearch] = useState("")
   const [showCountriesModal, setShowCountriesModal] = useState(false)
-
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({})
+  const [showErrorModal, setShowErrorModal] = useState(false)
 
   // Add this function after the useEffect hooks and before the loadUserProgress function
   const validateAge = (dateString: string): boolean => {
@@ -253,6 +255,9 @@ export default function WorkerOnboardingPage() {
   const loadUserProgress = async (userId: string) => {
     try {
       const response = await fetch(`/api/onboarding/progress?userId=${userId}`)
+      if (!response.ok) {
+        throw new Error(`Failed to load progress: ${response.status}`)
+      }
       const data = await response.json()
 
       if (data.progress) {
@@ -267,6 +272,7 @@ export default function WorkerOnboardingPage() {
       setLoading(false)
     } catch (error) {
       console.error('Failed to load progress:', error)
+      toast.error("Failed to load your progress. Please refresh the page.")
       setLoading(false)
     }
   }
@@ -286,9 +292,13 @@ export default function WorkerOnboardingPage() {
         })
       })
 
-      if (!response.ok) throw new Error('Failed to save progress')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `Failed to save progress: ${response.status}`)
+      }
     } catch (error) {
       console.error('Failed to save progress:', error)
+      toast.error("Failed to save your progress. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -302,58 +312,85 @@ export default function WorkerOnboardingPage() {
   }
 
   const handleFileUpload = async (file: File, documentType: string) => {
-    if (!file || !user) return false
-
+    if (!file || !user) {
+      toast.error("Please select a file to upload.")
+      return false
+    }
+  
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB.")
+      return false
+    }
+  
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a valid image (JPEG, PNG, WebP) or PDF file.")
+      return false
+    }
+  
     try {
       setUploadProgress(prev => ({ ...prev, [documentType]: 0 }))
-
+  
       const formData = new FormData()
       formData.append('file', file)
       formData.append('userId', user.id)
       formData.append('documentType', documentType)
-
+  
       const response = await fetch('/api/onboarding/upload', {
         method: 'POST',
         body: formData
       })
-
-      if (response.ok) {
-        const result = await response.json()
-        setUploadProgress(prev => ({ ...prev, [documentType]: 100 }))
-
-        if (!result.fileUrl || result.fileUrl === '') {
-          console.error('Upload failed: No file URL returned')
-          setValidationErrors([`Failed to upload ${documentType}: No file URL returned`])
-          return false
-        }
-
-        const documentPropertyMap: { [key: string]: string } = {
-          'profilePicture': 'profilePicture',
-          'idDocumentFront': 'idDocumentFront',
-          'idDocumentBack': 'idDocumentBack',
-          'passport': 'passportDocument',
-          'kra': 'kraDocument',
-          'goodConduct': 'goodConductUrl',
-          'medical': 'medicalDocument'
-        }
-
-        const documentProperty = documentPropertyMap[documentType]
-
-        if (documentProperty) {
-          setOnboardingData(prev => ({
-            ...prev,
-            documents: {
-              ...prev.documents,
-              [documentProperty]: result.fileUrl
-            }
-          }))
-        }
-
-        return true
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        throw new Error(errorData.error || `Upload failed: ${response.status}`)
       }
-      return false
+  
+      const result = await response.json()
+      setUploadProgress(prev => ({ ...prev, [documentType]: 100 }))
+  
+      // Add validation for the file URL
+      if (!result.fileUrl) {
+        throw new Error('Upload failed: No file URL in response')
+      }
+  
+      // Ensure the URL is properly formatted
+      const fileUrl = result.fileUrl.startsWith('http') 
+        ? result.fileUrl 
+        : `${window.location.origin}${result.fileUrl}`
+  
+      const documentPropertyMap: { [key: string]: string } = {
+        'profilePicture': 'profilePicture',
+        'idDocumentFront': 'idDocumentFront',
+        'idDocumentBack': 'idDocumentBack',
+        'passport': 'passportDocument',
+        'kra': 'kraDocument',
+        'goodConduct': 'goodConductUrl',
+        'medical': 'medicalDocument'
+      }
+  
+      const documentProperty = documentPropertyMap[documentType]
+  
+      if (documentProperty) {
+        setOnboardingData(prev => ({
+          ...prev,
+          documents: {
+            ...prev.documents,
+            [documentProperty]: fileUrl
+          }
+        }))
+        // Reset image error for this document
+        setImageErrors(prev => ({ ...prev, [documentProperty]: false }))
+      }
+  
+      toast.success(`${documentType.replace(/([A-Z])/g, ' $1')} uploaded successfully!`)
+      return true
     } catch (error) {
       console.error('Upload failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again.'
+      toast.error(errorMessage)
       return false
     }
   }
@@ -363,7 +400,6 @@ export default function WorkerOnboardingPage() {
 
     switch (step) {
       case 1: // Instructions
-        // Check if all required checkboxes are checked
         if (!onboardingData.terms.accuracy) errors.push("Please attest that all information provided is accurate")
         if (!onboardingData.terms.terms) errors.push("Please agree to the Terms of Service and Privacy Policy")
         if (!onboardingData.terms.consent) errors.push("Please consent to document verification and background checks")
@@ -373,7 +409,7 @@ export default function WorkerOnboardingPage() {
         if (!onboardingData.personalInfo.dateOfBirth) {
           errors.push("Date of birth is required")
         } else if (!validateAge(onboardingData.personalInfo.dateOfBirth)) {
-          errors.push("You must be at least 22 years old") // CHANGED FROM 18 TO 22
+          errors.push("You must be at least 22 years old")
         }
         if (!onboardingData.personalInfo.county) errors.push("County is required")
         if (!onboardingData.personalInfo.physicalAddress) errors.push("Physical address is required")
@@ -405,6 +441,13 @@ export default function WorkerOnboardingPage() {
     }
 
     setValidationErrors(errors)
+    
+    // Show toast for errors
+    if (errors.length > 0) {
+      toast.error(`Please fix ${errors.length} error(s) before continuing`)
+      setShowErrorModal(true)
+    }
+    
     return errors.length === 0
   }
 
@@ -415,6 +458,7 @@ export default function WorkerOnboardingPage() {
         setCurrentStep(nextStepNum)
         await saveProgress(nextStepNum, onboardingData)
         setValidationErrors([])
+        toast.success(`Moving to step ${nextStepNum}: ${steps[nextStepNum - 1].title}`)
       }
     }
   }
@@ -444,6 +488,11 @@ export default function WorkerOnboardingPage() {
         body: JSON.stringify({ userId: user.id })
       })
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Verification failed' }))
+        throw new Error(errorData.error || `Verification failed: ${response.status}`)
+      }
+
       const result = await response.json()
       setOnboardingData(prev => ({
         ...prev,
@@ -452,15 +501,26 @@ export default function WorkerOnboardingPage() {
           faceVerified: result.faceVerified
         }
       }))
+      
+      if (result.faceVerified) {
+        toast.success("Face verification completed successfully!")
+      } else {
+        toast.error("Face verification failed. Please try again.")
+      }
     } catch (error) {
       console.error('Face verification failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Face verification failed'
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
   }
 
   const processPayment = async () => {
-    if (!user || !onboardingData.payment.mpesaNumber) return
+    if (!user || !onboardingData.payment.mpesaNumber) {
+      toast.error("Please enter your MPesa number")
+      return
+    }
 
     setSaving(true)
     try {
@@ -473,9 +533,15 @@ export default function WorkerOnboardingPage() {
         })
       })
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Payment failed' }))
+        throw new Error(errorData.error || `Payment failed: ${response.status}`)
+      }
+
       const result = await response.json()
       if (!result.success) {
         setValidationErrors([result.error])
+        toast.error(result.error || "Payment failed")
       } else {
         setOnboardingData(prev => ({
           ...prev,
@@ -485,15 +551,64 @@ export default function WorkerOnboardingPage() {
           }
         }))
         setValidationErrors([])
+        toast.success("Payment processed successfully!")
       }
     } catch (error) {
-      setValidationErrors(['Payment service temporarily unavailable'])
+      const errorMessage = error instanceof Error ? error.message : 'Payment service temporarily unavailable'
+      setValidationErrors([errorMessage])
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
   }
 
   const progress = (currentStep / totalSteps) * 100
+
+  // Error Modal Component
+  const ErrorModal = () => (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-theme-background rounded-2xl shadow-2xl max-w-md w-full animate-theme-transition">
+        <div className="flex items-center justify-between p-6 border-b border-theme-border">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-6 w-6 text-theme-error" />
+            <div>
+              <h2 className="text-xl font-bold text-theme-text">Validation Errors</h2>
+              <p className="text-theme-text-muted text-sm mt-1">Please fix the following errors to continue:</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowErrorModal(false)}
+            className="hover:bg-theme-error/10 rounded-lg"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {validationErrors.map((error, index) => (
+              <div key={index} className="flex items-start gap-3 p-3 rounded-lg border border-theme-error/20 bg-theme-error/5">
+                <div className="h-2 w-2 rounded-full bg-theme-error mt-2 flex-shrink-0" />
+                <p className="text-sm text-theme-error flex-1">{error}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-theme-border">
+          <Button
+            onClick={() => setShowErrorModal(false)}
+            className="w-full"
+            style={{ backgroundColor: currentTheme.colors.primary }}
+          >
+            I Understand
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
 
   // County Selection Modal
   const CountyModal = () => (
@@ -522,6 +637,7 @@ export default function WorkerOnboardingPage() {
                 onClick={() => {
                   updateOnboardingData('personalInfo', { county })
                   setShowCountyModal(false)
+                  toast.success(`County selected: ${county}`)
                 }}
                 className={cn(
                   "p-3 rounded-lg border text-left transition-all duration-200 hover:scale-105",
@@ -551,10 +667,12 @@ export default function WorkerOnboardingPage() {
         updateOnboardingData('kycDetails', {
           countriesWorked: currentCountries.filter(c => c !== country)
         })
+        toast.info(`Removed ${country}`)
       } else {
         updateOnboardingData('kycDetails', {
           countriesWorked: [...currentCountries, country]
         })
+        toast.success(`Added ${country}`)
       }
     }
 
@@ -709,13 +827,43 @@ export default function WorkerOnboardingPage() {
   }) => {
     const [isDragging, setIsDragging] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
+    const [localPreview, setLocalPreview] = useState<string | null>(null)
+    const [hasUploaded, setHasUploaded] = useState(false)
+
+    // Clean up object URLs on unmount
+    useEffect(() => {
+      return () => {
+        if (localPreview) {
+          URL.revokeObjectURL(localPreview)
+        }
+      }
+    }, [localPreview])
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (file) {
+        // Clear any previous local preview
+        if (localPreview) {
+          URL.revokeObjectURL(localPreview)
+        }
+        
+        // Create local preview immediately - this will show instantly
+        const previewUrl = URL.createObjectURL(file)
+        setLocalPreview(previewUrl)
+        setHasUploaded(false)
+        
+        // Start upload in background without blocking the preview
         setIsUploading(true)
-        await onFileSelect(file)
-        setIsUploading(false)
+        try {
+          const success = await onFileSelect(file)
+          setHasUploaded(success)
+        } catch (error) {
+          console.error('Upload failed:', error)
+          // Keep the local preview even if upload fails
+          setHasUploaded(false)
+        } finally {
+          setIsUploading(false)
+        }
       }
     }
 
@@ -724,11 +872,42 @@ export default function WorkerOnboardingPage() {
       setIsDragging(false)
       const file = e.dataTransfer.files?.[0]
       if (file) {
+        // Clear any previous local preview
+        if (localPreview) {
+          URL.revokeObjectURL(localPreview)
+        }
+        
+        // Create local preview immediately
+        const previewUrl = URL.createObjectURL(file)
+        setLocalPreview(previewUrl)
+        setHasUploaded(false)
+        
         setIsUploading(true)
-        await onFileSelect(file)
-        setIsUploading(false)
+        try {
+          const success = await onFileSelect(file)
+          setHasUploaded(success)
+        } catch (error) {
+          console.error('Upload failed:', error)
+          setHasUploaded(false)
+        } finally {
+          setIsUploading(false)
+        }
       }
     }
+
+    const handleImageError = (imageId: string) => {
+      console.error(`Image failed to load: ${currentImage}`)
+      setImageErrors(prev => ({ ...prev, [imageId]: true }))
+      toast.error(`Failed to load ${label}. Please re-upload the image.`)
+    }
+
+    const handleImageLoad = (imageId: string) => {
+      setImageErrors(prev => ({ ...prev, [imageId]: false }))
+    }
+
+    // Priority: 1. Local preview (immediate), 2. Current image (from server), 3. Nothing
+    const displayImage = localPreview || currentImage
+    const hasError = imageErrors[id]
 
     return (
       <div className="space-y-3">
@@ -755,7 +934,7 @@ export default function WorkerOnboardingPage() {
             <Input
               id={id}
               type="file"
-              accept="image/*"
+              accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
               onChange={handleFileChange}
               className="hidden"
               disabled={isUploading}
@@ -765,37 +944,38 @@ export default function WorkerOnboardingPage() {
               <div className="flex flex-col items-center">
                 <Loader2 className="h-6 w-6 animate-spin text-theme-primary mb-2" />
                 <p className="text-sm font-medium text-theme-text">Uploading...</p>
+                <p className="text-xs text-theme-text-muted">Preview shown below</p>
               </div>
             ) : (
               <div className="text-center">
                 <Camera className="h-8 w-8 text-theme-text-muted mx-auto mb-2" />
                 <p className="text-sm font-medium text-theme-text">Click to upload</p>
                 <p className="text-xs text-theme-text-muted">or drag and drop</p>
+                <p className="text-xs text-theme-text-muted mt-1">JPEG, PNG, WebP (max 5MB)</p>
               </div>
             )}
           </div>
 
           {/* Preview Area */}
           <div className={cn(
-            "border-2 border-dashed border-theme-border rounded-lg p-4 flex items-center justify-center relative",
-            aspectRatio === "square" ? "h-32" : "h-24"
+            "border-2 border-dashed rounded-lg p-4 flex items-center justify-center relative bg-white",
+            aspectRatio === "square" ? "h-32" : "h-24",
+            hasError ? "border-theme-error bg-theme-error/5" : "border-theme-border"
           )}>
-            {currentImage ? (
-              <div className="relative group">
+            {displayImage && !hasError ? (
+              <div className="relative group w-full h-full flex items-center justify-center">
                 <img 
-                  src={currentImage} 
+                  src={displayImage} 
                   alt="Preview" 
                   className={cn(
-                    "object-contain rounded-lg bg-white", // Changed object-cover to object-contain and added bg-white
-                    aspectRatio === "square" ? "h-20 w-20" : "h-16 w-24"
+                    "object-contain rounded-lg",
+                    aspectRatio === "square" ? "max-h-20 max-w-20" : "max-h-16 max-w-32"
                   )}
-                  onError={(e) => {
-                    // Fallback if image fails to load
-                    e.currentTarget.style.display = 'none';
-                  }}
+                  onError={() => handleImageError(id)}
+                  onLoad={() => handleImageLoad(id)}
                 />
                 <button
-                  onClick={() => window.open(currentImage, '_blank')}
+                  onClick={() => window.open(displayImage, '_blank')}
                   className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all rounded-lg flex items-center justify-center"
                 >
                   <Eye className="h-5 w-5 text-white opacity-0 group-hover:opacity-100" />
@@ -804,7 +984,7 @@ export default function WorkerOnboardingPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="absolute -bottom-2 -right-2 h-6 text-xs bg-theme-background"
+                    className="absolute -bottom-2 -right-2 h-6 text-xs bg-white border-theme-border"
                     onClick={(e) => {
                       e.stopPropagation()
                       document.getElementById(id)?.click()
@@ -813,6 +993,22 @@ export default function WorkerOnboardingPage() {
                     Change
                   </Button>
                 )}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  </div>
+                )}
+                {hasUploaded && !isUploading && (
+                  <div className="absolute top-1 right-1 bg-theme-success text-white rounded-full p-1">
+                    <CheckCircle className="h-3 w-3" />
+                  </div>
+                )}
+              </div>
+            ) : hasError ? (
+              <div className="text-center text-theme-error">
+                <XCircle className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Failed to load image</p>
+                <p className="text-xs">Please re-upload</p>
               </div>
             ) : (
               <div className="text-center text-theme-text-muted">
@@ -920,30 +1116,30 @@ export default function WorkerOnboardingPage() {
             )}
           </div>
 
-          <div className="border-2 border-dashed border-theme-border rounded-lg p-4 h-24 flex items-center justify-center bg-white"> {/* Added bg-white */}
-  {currentFile && currentFile !== 'skipped' ? (
-    <div className="text-center">
-      <FileText className="h-8 w-8 text-theme-success mx-auto mb-1" />
-      <p className="text-xs text-theme-success">Document uploaded</p>
-      <button 
-        onClick={() => window.open(currentFile, '_blank')}
-        className="text-xs text-theme-primary hover:underline mt-1"
-      >
-        View
-      </button>
-    </div>
-  ) : currentFile === 'skipped' ? (
-    <div className="text-center text-theme-text-muted">
-      <FileText className="h-8 w-8 text-theme-text-muted mx-auto mb-1" />
-      <p className="text-xs">Skipped</p>
-    </div>
-  ) : (
-    <div className="text-center text-theme-text-muted">
-      <p className="text-xs">No document uploaded</p>
-      {optional && <p className="text-xs">Optional document</p>}
-    </div>
-  )}
-</div>
+          <div className="border-2 border-dashed border-theme-border rounded-lg p-4 h-24 flex items-center justify-center bg-white">
+            {currentFile && currentFile !== 'skipped' ? (
+              <div className="text-center">
+                <FileText className="h-8 w-8 text-theme-success mx-auto mb-1" />
+                <p className="text-xs text-theme-success">Document uploaded</p>
+                <button 
+                  onClick={() => window.open(currentFile, '_blank')}
+                  className="text-xs text-theme-primary hover:underline mt-1"
+                >
+                  View
+                </button>
+              </div>
+            ) : currentFile === 'skipped' ? (
+              <div className="text-center text-theme-text-muted">
+                <FileText className="h-8 w-8 text-theme-text-muted mx-auto mb-1" />
+                <p className="text-xs">Skipped</p>
+              </div>
+            ) : (
+              <div className="text-center text-theme-text-muted">
+                <p className="text-xs">No document uploaded</p>
+                {optional && <p className="text-xs">Optional document</p>}
+              </div>
+            )}
+          </div>
         </div>
 
         {uploadProgress[id] > 0 && uploadProgress[id] < 100 && (
@@ -1641,6 +1837,7 @@ export default function WorkerOnboardingPage() {
                             ...prev,
                             documents: { ...prev.documents, passportDocument: 'skipped' }
                           }))
+                          toast.info("Passport document skipped")
                         }}
                       />
 
@@ -1656,6 +1853,7 @@ export default function WorkerOnboardingPage() {
                             ...prev,
                             documents: { ...prev.documents, kraDocument: 'skipped' }
                           }))
+                          toast.info("KRA PIN certificate skipped")
                         }}
                       />
 
@@ -1671,6 +1869,7 @@ export default function WorkerOnboardingPage() {
                             ...prev,
                             documents: { ...prev.documents, goodConductUrl: 'skipped' }
                           }))
+                          toast.info("Certificate of Good Conduct skipped")
                         }}
                       />
                     </div>
@@ -1714,6 +1913,7 @@ export default function WorkerOnboardingPage() {
                                 src={onboardingData.documents.profilePicture}
                                 alt="Profile"
                                 className="w-full h-full object-cover"
+                                onError={() => toast.error("Failed to load profile picture")}
                               />
                             </div>
                           ) : (
@@ -1739,6 +1939,7 @@ export default function WorkerOnboardingPage() {
                                 src={onboardingData.documents.idDocumentFront}
                                 alt="ID"
                                 className="w-full h-full object-cover"
+                                onError={() => toast.error("Failed to load ID document")}
                               />
                             </div>
                           ) : (
@@ -2281,6 +2482,7 @@ export default function WorkerOnboardingPage() {
       </div>
 
       {/* Modals */}
+      {showErrorModal && <ErrorModal />}
       {showCountyModal && <CountyModal />}
       {showCountriesModal && <CountriesModal />}
     </PortalLayout>
