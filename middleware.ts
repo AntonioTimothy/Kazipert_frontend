@@ -1,35 +1,108 @@
 // middleware.ts
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifyToken, verifyRefreshToken } from './lib/auth'
 
-export function middleware(request: NextRequest) {
-    // Handle preflight requests for file uploads
-    if (request.method === 'OPTIONS') {
-        return new Response(null, {
-            status: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            },
-        })
+export async function middleware(request: NextRequest) {
+    // Get tokens from cookies
+    const accessToken = request.cookies.get('accessToken')?.value
+    const refreshToken = request.cookies.get('refreshToken')?.value
+
+    // Protected routes
+    const protectedRoutes = [
+        '/worker/onboarding',
+        '/worker/dashboard',
+        '/worker/jobs',
+        '/worker/contracts',
+        '/worker/payments',
+        '/api/onboarding',
+        '/api/worker'
+    ]
+
+    const isProtectedRoute = protectedRoutes.some(route =>
+        request.nextUrl.pathname.startsWith(route)
+    )
+
+    if (isProtectedRoute) {
+        let isValidToken = false
+        let shouldRefresh = false
+
+        // Check access token first
+        if (accessToken) {
+            try {
+                verifyToken(accessToken)
+                isValidToken = true
+            } catch (error) {
+                // Access token is invalid or expired
+                if (error instanceof Error && error.message.includes('expired')) {
+                    shouldRefresh = true
+                }
+            }
+        }
+
+        // If access token is expired but we have a refresh token, try to refresh
+        if (shouldRefresh && refreshToken) {
+            try {
+                // Verify refresh token is still valid
+                verifyRefreshToken(refreshToken)
+
+                // Create a response that will trigger token refresh on the client
+                const response = NextResponse.next()
+
+                // Add a header to indicate token needs refresh
+                response.headers.set('x-token-expired', 'true')
+
+                return response
+            } catch (error) {
+                // Refresh token is also invalid, redirect to login
+                console.log('Refresh token invalid, redirecting to login')
+                return redirectToLogin(request)
+            }
+        }
+
+        // If no valid token and no refresh possible, redirect to login
+        if (!isValidToken && !shouldRefresh) {
+            return redirectToLogin(request)
+        }
     }
 
-    const response = NextResponse.next()
+    return NextResponse.next()
+}
 
-    // Add CORS headers for all API routes
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-        response.headers.set('Access-Control-Allow-Origin', '*')
-        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    }
+function redirectToLogin(request: NextRequest) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+
+    const response = NextResponse.redirect(loginUrl)
+
+    // Clear invalid tokens
+    response.cookies.set('accessToken', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 0,
+        path: '/',
+    })
+
+    response.cookies.set('refreshToken', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 0,
+        path: '/',
+    })
 
     return response
 }
 
 export const config = {
     matcher: [
-        '/api/:path*',
-        // Add other paths if needed
-    ],
+        '/worker/onboarding/:path*',
+        '/worker/dashboard/:path*',
+        '/worker/jobs/:path*',
+        '/worker/contracts/:path*',
+        '/worker/payments/:path*',
+        '/api/onboarding/:path*',
+        '/api/worker/:path*'
+    ]
 }

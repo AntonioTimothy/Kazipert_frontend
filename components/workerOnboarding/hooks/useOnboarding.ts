@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 interface OnboardingData {
@@ -57,7 +56,6 @@ interface OnboardingData {
 }
 
 export function useOnboarding(initialUser: any, initialProgress: any) {
-    const router = useRouter()
     const [user, setUser] = useState<any>(initialUser)
     const [loading, setLoading] = useState(!initialUser)
     const [currentStep, setCurrentStep] = useState(1)
@@ -66,68 +64,70 @@ export function useOnboarding(initialUser: any, initialProgress: any) {
     const [showErrorModal, setShowErrorModal] = useState(false)
     const [showCountyModal, setShowCountyModal] = useState(false)
     const [showCountriesModal, setShowCountriesModal] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
 
-    const [onboardingData, setOnboardingData] = useState<OnboardingData>({
-        personalInfo: {
-            dateOfBirth: "",
-            county: "",
-            physicalAddress: ""
-        },
-        kycDetails: {
-            idNumber: "",
-            passportNumber: "",
-            passportIssueDate: "",
-            passportExpiryDate: "",
-            kraPin: "",
-            maritalStatus: "",
-            hasChildren: "",
-            numberOfChildren: 0,
-            workedAbroad: "",
-            countriesWorked: [],
-            workExperience: "",
-            skills: [],
-            languages: {
-                english: "",
-                swahili: "",
-                arabic: ""
+    // Initialize onboarding data from progress or use default structure
+    const [onboardingData, setOnboardingData] = useState<OnboardingData>(() => {
+        if (initialProgress?.data) {
+            return initialProgress.data
+        }
+
+        return {
+            personalInfo: {
+                dateOfBirth: "",
+                county: "",
+                physicalAddress: ""
+            },
+            kycDetails: {
+                idNumber: "",
+                passportNumber: "",
+                passportIssueDate: "",
+                passportExpiryDate: "",
+                kraPin: "",
+                maritalStatus: "",
+                hasChildren: "",
+                numberOfChildren: 0,
+                workedAbroad: "",
+                countriesWorked: [],
+                workExperience: "",
+                skills: [],
+                languages: {
+                    english: "",
+                    swahili: "",
+                    arabic: ""
+                }
+            },
+            documents: {
+                profilePicture: null,
+                idDocumentFront: null,
+                idDocumentBack: null,
+                passportDocument: null,
+                kraDocument: null,
+                goodConductUrl: null,
+                educationCertUrl: null,
+                workCertUrl: null,
+                medicalDocument: null
+            },
+            verification: {
+                faceVerified: false,
+                medicalVerified: false,
+                paymentVerified: false
+            },
+            payment: {
+                mpesaNumber: "",
+                payLater: false
+            },
+            terms: {
+                accuracy: false,
+                terms: false,
+                consent: false
             }
-        },
-        documents: {
-            profilePicture: null,
-            idDocumentFront: null,
-            idDocumentBack: null,
-            passportDocument: null,
-            kraDocument: null,
-            goodConductUrl: null,
-            educationCertUrl: null,
-            workCertUrl: null,
-            medicalDocument: null
-        },
-        verification: {
-            faceVerified: false,
-            medicalVerified: false,
-            paymentVerified: false
-        },
-        payment: {
-            mpesaNumber: "",
-            payLater: false
-        },
-        terms: {
-            accuracy: false,
-            terms: false,
-            consent: false
         }
     })
 
     useEffect(() => {
         if (initialProgress) {
             setCurrentStep(initialProgress.currentStep || 1)
-            if (initialProgress.data) {
-                setOnboardingData(prev => ({
-                    ...prev,
-                    ...initialProgress.data
-                }))
-            }
             setLoading(false)
         }
     }, [initialProgress])
@@ -172,10 +172,88 @@ export function useOnboarding(initialUser: any, initialProgress: any) {
 
         // Auto-save on data changes
         if (user && !saving) {
-            saveProgress(currentStep, {
+            const updatedData = {
                 ...onboardingData,
                 [section]: { ...onboardingData[section as keyof typeof onboardingData], ...updates }
+            }
+            saveProgress(currentStep, updatedData)
+        }
+    }
+
+    const handleFileUpload = async (file: File, documentType: string) => {
+        if (!file || !user) {
+            toast.error("Please select a file to upload.")
+            return false
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File size must be less than 5MB.")
+            return false
+        }
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+        if (!validTypes.includes(file.type)) {
+            toast.error("Please upload a valid image (JPEG, PNG, WebP) or PDF file.")
+            return false
+        }
+
+        try {
+            setUploadProgress(prev => ({ ...prev, [documentType]: 0 }))
+
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('userId', user.id)
+            formData.append('documentType', documentType)
+
+            const response = await fetch('/api/onboarding/upload', {
+                method: 'POST',
+                body: formData
             })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+                throw new Error(errorData.error || `Upload failed: ${response.status}`)
+            }
+
+            const result = await response.json()
+            setUploadProgress(prev => ({ ...prev, [documentType]: 100 }))
+
+            // Add validation for the file URL
+            if (!result.fileUrl) {
+                throw new Error('Upload failed: No file URL in response')
+            }
+
+            const documentPropertyMap: { [key: string]: string } = {
+                'profilePicture': 'profilePicture',
+                'idDocumentFront': 'idDocumentFront',
+                'idDocumentBack': 'idDocumentBack',
+                'passport': 'passportDocument',
+                'kra': 'kraDocument',
+                'goodConduct': 'goodConductUrl',
+                'medical': 'medicalDocument'
+            }
+
+            const documentProperty = documentPropertyMap[documentType]
+
+            if (documentProperty) {
+                setOnboardingData(prev => ({
+                    ...prev,
+                    documents: {
+                        ...prev.documents,
+                        [documentProperty]: result.fileUrl
+                    }
+                }))
+            }
+
+            toast.success(`${documentType.replace(/([A-Z])/g, ' $1')} uploaded successfully!`)
+            return true
+        } catch (error) {
+            console.error('Upload failed:', error)
+            const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again.'
+            toast.error(errorMessage)
+            return false
         }
     }
 
@@ -268,6 +346,48 @@ export function useOnboarding(initialUser: any, initialProgress: any) {
         }
     }
 
+    const simulateFaceVerification = async () => {
+        if (!user) return
+
+        setSaving(true)
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 2000))
+
+            updateOnboardingData('verification', { faceVerified: true })
+            toast.success("Face verification completed successfully!")
+        } catch (error) {
+            console.error('Face verification failed:', error)
+            const errorMessage = error instanceof Error ? error.message : 'Face verification failed'
+            toast.error(errorMessage)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const processPayment = async () => {
+        if (!user || !onboardingData.payment.mpesaNumber) {
+            toast.error("Please enter your MPesa number")
+            return
+        }
+
+        setSaving(true)
+        try {
+            // Simulate payment processing
+            await new Promise(resolve => setTimeout(resolve, 2000))
+
+            updateOnboardingData('verification', { paymentVerified: true })
+            setValidationErrors([])
+            toast.success("Payment processed successfully!")
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Payment service temporarily unavailable'
+            setValidationErrors([errorMessage])
+            toast.error(errorMessage)
+        } finally {
+            setSaving(false)
+        }
+    }
+
     return {
         user,
         loading,
@@ -278,6 +398,7 @@ export function useOnboarding(initialUser: any, initialProgress: any) {
         showErrorModal,
         showCountyModal,
         showCountriesModal,
+        uploadProgress,
         updateOnboardingData,
         nextStep,
         prevStep,
@@ -285,6 +406,9 @@ export function useOnboarding(initialUser: any, initialProgress: any) {
         setShowErrorModal,
         setShowCountyModal,
         setShowCountriesModal,
-        saveProgress
+        handleFileUpload,
+        saveProgress,
+        simulateFaceVerification,
+        processPayment
     }
 }

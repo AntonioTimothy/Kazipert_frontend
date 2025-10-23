@@ -1,7 +1,11 @@
+// app/api/auth/verify-login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-change-in-production';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-change-in-production';
 
 export async function POST(request: NextRequest) {
     try {
@@ -71,7 +75,7 @@ export async function POST(request: NextRequest) {
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Store refresh token
+        // Store refresh token in database
         await prisma.refreshToken.create({
             data: {
                 token: refreshToken,
@@ -85,12 +89,38 @@ export async function POST(request: NextRequest) {
 
         console.log('Login successful for user:', user.email);
 
-        return NextResponse.json({
+        // Create response with user data
+        const response = NextResponse.json({
             message: 'Login successful',
             user: userWithoutPassword,
             accessToken,
             refreshToken,
         }, { status: 200 });
+
+        // Set cookies manually with proper configuration
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        // Set access token cookie (15 minutes)
+        response.cookies.set('accessToken', accessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'lax',
+            maxAge: 15 * 60, // 15 minutes
+            path: '/',
+        });
+
+        // Set refresh token cookie (7 days)
+        response.cookies.set('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60, // 7 days
+            path: '/',
+        });
+
+        console.log('Cookies set successfully for user:', user.email);
+
+        return response;
 
     } catch (error: any) {
         console.error('Verify login OTP error:', error);

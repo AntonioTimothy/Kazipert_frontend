@@ -349,23 +349,75 @@ export function PortalLayout({ children, user, notificationCount = 3 }: PortalLa
     isLoading 
   } = useNavigation()
 
-  const handleLogout = () => {
-    // Clear all user data from storage
-    sessionStorage.removeItem("user")
-    localStorage.removeItem("accessToken")
-    localStorage.removeItem("refreshToken")
-    
-    // Clear any other user-related data
-    localStorage.removeItem("kazipert_user")
-    sessionStorage.clear()
-    
-    // Redirect to login page
-    router.push("/login")
-    
-    // Force reload to ensure clean state
-    setTimeout(() => {
-      window.location.reload()
-    }, 100)
+  const handleLogout = async () => {
+    try {
+      // Call logout API first
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+  
+      if (!response.ok) {
+        throw new Error('Logout API call failed')
+      }
+  
+      // Clear all user data from storage
+      sessionStorage.removeItem("user")
+      sessionStorage.removeItem("onboarding_state")
+      sessionStorage.removeItem("auth-storage")
+      
+      localStorage.removeItem("accessToken")
+      localStorage.removeItem("refreshToken")
+      localStorage.removeItem("kazipert_user")
+      localStorage.removeItem("auth-storage")
+      
+      // Clear any other app-specific storage
+      const appKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('kazipert_') || 
+        key.startsWith('onboarding_') ||
+        key.startsWith('auth_')
+      )
+      appKeys.forEach(key => localStorage.removeItem(key))
+  
+      // Clear session storage completely for security
+      sessionStorage.clear()
+  
+      // Clear any service worker caches if used
+      if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+          cacheNames.forEach(cacheName => {
+            caches.delete(cacheName)
+          })
+        })
+      }
+  
+      console.log('Logout successful - all data cleared')
+  
+      // Redirect to login page
+      router.push("/login")
+      
+      // Force reload to ensure clean state and clear any memory
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+  
+    } catch (error) {
+      console.error('Logout error:', error)
+      
+      // Even if API call fails, clear client-side data and redirect
+      sessionStorage.clear()
+      localStorage.clear()
+      
+      // Redirect to login page with error parameter
+      router.push("/login?error=logout_failed")
+      
+      // Still force reload for clean state
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+    }
   }
 
   // Get flat navigation for mobile (no nested items)
