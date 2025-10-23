@@ -1,78 +1,45 @@
-// app/api/onboarding/upload/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { saveOnboardingProgress, fetchOnboardingProgress } from '@/lib/onboarding-service'
 
 export async function POST(request: NextRequest) {
     try {
-        const formData = await request.formData();
-        const file = formData.get('file') as File;
-        const userId = formData.get('userId') as string;
-        const documentType = formData.get('documentType') as string;
+        const { userId, currentStep, data } = await request.json()
 
-        if (!file || !userId || !documentType) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!userId) {
+            return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
         }
 
-        // Create uploads directory
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads', userId);
-        await mkdir(uploadsDir, { recursive: true });
+        const result = await saveOnboardingProgress(userId, currentStep, data)
 
-        // Generate unique filename
-        const timestamp = Date.now();
-        const fileExtension = path.extname(file.name);
-        const filename = `${documentType}_${timestamp}${fileExtension}`;
-        const filepath = path.join(uploadsDir, filename);
-
-        // Save file
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(filepath, buffer);
-
-        const fileUrl = `/uploads/${userId}/${filename}`;
-
-        // Update database
-        const updateData: any = {};
-        switch (documentType) {
-            case 'profilePicture':
-                updateData.profilePicture = fileUrl;
-                break;
-            case 'idDocumentFront':
-                updateData.idDocumentFront = fileUrl;
-                break;
-            case 'idDocumentBack':
-                updateData.idDocumentBack = fileUrl;
-                break;
-            case 'passport':
-                updateData.passportDocument = fileUrl;
-                break;
-            case 'kra':
-                updateData.kraDocument = fileUrl;
-                break;
-            case 'goodConduct':
-                updateData.goodConductUrl = fileUrl;
-                break;
-            case 'medical':
-                updateData.medicalDocument = fileUrl;
-                break;
+        if (!result.success) {
+            return NextResponse.json({ error: result.error }, { status: 500 })
         }
 
-        const kyc = await prisma.kycDetails.upsert({
-            where: { userId },
-            update: updateData,
-            create: {
-                userId,
-                ...updateData
-            }
-        });
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('Progress save error:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
 
-        return NextResponse.json({
-            success: true,
-            fileUrl,
-            documentType
-        });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+export async function GET(request: NextRequest) {
+    try {
+        const { searchParams } = new URL(request.url)
+        const userId = searchParams.get('userId')
+
+        if (!userId) {
+            return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+        }
+
+        const progress = await fetchOnboardingProgress(userId)
+
+        if (!progress) {
+            return NextResponse.json({ error: 'Progress not found' }, { status: 404 })
+        }
+
+        return NextResponse.json(progress)
+    } catch (error) {
+        console.error('Progress fetch error:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }
