@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { User, MapPin } from "lucide-react"
+import { useEffect } from "react"
 
 interface Step2PersonalInfoProps {
   data: any
@@ -14,6 +15,14 @@ interface Step2PersonalInfoProps {
 }
 
 export default function Step2PersonalInfo({ data, updateData, user, onCountyModalOpen }: Step2PersonalInfoProps) {
+
+  useEffect(() => {
+    // Prefill personal info if available
+    console.log('User data:', user);
+  }
+  ), []
+
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border-2 p-4 border-theme-primary/30 bg-theme-primary/5">
@@ -37,7 +46,7 @@ export default function Step2PersonalInfo({ data, updateData, user, onCountyModa
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-theme-text-muted">Full Name:</span>
-              <p className="font-medium text-theme-text">{user.fullName}</p>
+              <p className="font-medium text-theme-text">{user.name}</p>
             </div>
             <div>
               <span className="text-theme-text-muted">Email:</span>
@@ -58,18 +67,29 @@ export default function Step2PersonalInfo({ data, updateData, user, onCountyModa
       {/* Editable Fields */}
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-theme-text">
-              Date of Birth *
-            </Label>
-            <Input
-              id="dateOfBirth"
-              type="date"
-              className="h-9 border-theme-border focus:border-theme-primary"
-              value={data.personalInfo.dateOfBirth}
-              onChange={(e) => updateData('personalInfo', { dateOfBirth: e.target.value })}
-            />
-          </div>
+        <div className="space-y-2">
+  <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-theme-text">
+    Date of Birth *
+  </Label>
+  <Input
+    id="dateOfBirth"
+    type="date"
+    className="h-9 border-theme-border focus:border-theme-primary"
+    value={data.personalInfo.dateOfBirth}
+    onChange={(e) => updateData('personalInfo', { dateOfBirth: e.target.value })}
+    onFocus={(e) => {
+      if (!e.target.value) {
+        e.target.value = '2000-01-01';
+        setTimeout(() => e.target.showPicker(), 0);
+      }
+    }}
+    onBlur={(e) => {
+      if (e.target.value === '2000-01-01' && !data.personalInfo.dateOfBirth) {
+        e.target.value = '';
+      }
+    }}
+  />
+</div>
           <div className="space-y-2">
             <Label htmlFor="county" className="text-sm font-semibold text-theme-text">
               County of Residence *

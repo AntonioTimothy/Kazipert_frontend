@@ -181,7 +181,7 @@ export default function WorkerOnboardingClient({ initialUser, initialProgress }:
                 <Step2PersonalInfo 
                   data={onboardingData} 
                   updateData={updateOnboardingData} 
-                  user={user}
+                  user={initialUser}
                   onCountyModalOpen={() => setShowCountyModal(true)}
                 />
               )}
