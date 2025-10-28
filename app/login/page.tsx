@@ -186,12 +186,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleSuccessfulLogin = (data: any) => {
+  const handleSuccessfulLogin = async (data: any) => {
     // Map backend role to frontend user type
     const frontendUserType = mapBackendRoleToFrontend(data.user.role);
-
+  
     let decorateUserData = decorateUserTemp(frontendUserType)
-
+  
     // Create user object in the format your dashboards expect
     const user = {
       ...decorateUserData,
@@ -201,43 +201,54 @@ export default function LoginPage() {
       name: data.user.fullName || data.user.email,
       role: frontendUserType,
       type: frontendUserType,
-
     };
-
+  
     console.log("Decorated User Data:", user);
-
+  
     // Store user in session (like your old logic)
     sessionStorage.setItem("user", JSON.stringify(user));
-
+  
     // Store tokens in localStorage for API calls
     if (data.accessToken) {
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
     }
-
+  
     setSuccess("Login successful! Redirecting...");
-
+  
     console.log("Login successful, user role:", user.role);
-
-    // Redirect based on mapped user type (EXACTLY like your old logic)
-
-    setTimeout(() => {
-      if (user.role === "worker") {
-        router.push("/worker/dashboard")
-      } else if (user.role === "employer") {
-        console.log("Redirecting to employer dashboard");
-        router.push("/employer/dashboard")
-      } else if (user.role === "admin") {
-        console.log("Redirecting to admin dashboard");
-        router.push("/admin/dashboard")
-      } else {
-        // console.log("User role unrecognized, cannot redirect properly.", user.role);
-        router.push("/")
-        // Default fallback
-        // router.push("/dashboard");
-        setError("Your Account could not be validated properly. Please contact support.");
+  
+    // IMPORTANT: Add a small delay and use router.refresh() before redirect
+    setTimeout(async () => {
+      try {
+        // Refresh the router to ensure server components re-render with new auth state
+        router.refresh();
+        
+        // Wait a bit more for the refresh to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Redirect based on mapped user type
+        if (user.role === "worker") {
+          console.log("Redirecting to worker dashboard");
+          router.push("/worker/dashboard");
+        } else if (user.role === "employer") {
+          console.log("Redirecting to employer dashboard");
+          router.push("/employer/dashboard");
+        } else if (user.role === "admin") {
+          console.log("Redirecting to admin dashboard");
+          router.push("/admin/dashboard");
+        } else {
+          console.log("User role unrecognized, redirecting to home");
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Redirect error:", error);
+        // Fallback: try direct navigation
+        window.location.href = user.role === "worker" ? "/worker/dashboard" : 
+                             user.role === "employer" ? "/employer/dashboard" : 
+                             user.role === "admin" ? "/admin/dashboard" : "/";
       }
-    }, 200);
+    }, 300);
   };
 
   const handleVerifyOtp = useCallback(async (code: string) => {

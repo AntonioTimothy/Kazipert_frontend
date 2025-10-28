@@ -1,9 +1,17 @@
 // lib/auth.ts
-import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers';
+import { SignJWT, jwtVerify } from 'jose'
+import { cookies } from 'next/headers'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-change-in-production'
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-change-in-production'
+
+const getJwtSecretKey = () => {
+    return new TextEncoder().encode(JWT_SECRET)
+}
+
+const getJwtRefreshSecretKey = () => {
+    return new TextEncoder().encode(JWT_REFRESH_SECRET)
+}
 
 export interface TokenPayload {
     userId: string;
@@ -13,62 +21,80 @@ export interface TokenPayload {
     exp?: number;
 }
 
-export function generateAccessToken(user: any): string {
-    const payload: TokenPayload = {
+export async function generateAccessToken(user: any): Promise<string> {
+    const token = await new SignJWT({
         userId: user.id,
         email: user.email,
         role: user.role,
-    };
+    })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('15m')
+        .sign(getJwtSecretKey())
 
-    return jwt.sign(payload, JWT_SECRET, {
-        expiresIn: '15m', // 15 minutes
-    });
+    return token
 }
 
-export function generateRefreshToken(user: any): string {
-    const payload: TokenPayload = {
+export async function generateRefreshToken(user: any): Promise<string> {
+    const token = await new SignJWT({
         userId: user.id,
         email: user.email,
         role: user.role,
-    };
+    })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('7d')
+        .sign(getJwtRefreshSecretKey())
 
-    return jwt.sign(payload, JWT_REFRESH_SECRET, {
-        expiresIn: '7d', // 7 days
-    });
+    return token
 }
 
-export function verifyToken(token: string): TokenPayload {
+export async function verifyToken(token: string): Promise<TokenPayload> {
     try {
-        return jwt.verify(token, JWT_SECRET) as TokenPayload;
+        const { payload } = await jwtVerify(token, getJwtSecretKey())
+        return {
+            userId: payload.userId as string,
+            email: payload.email as string,
+            role: payload.role as string,
+            iat: payload.iat as number,
+            exp: payload.exp as number,
+        }
     } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) {
-            throw new Error('Token expired');
+        if (error instanceof Error) {
+            if (error.message.includes('expired')) {
+                throw new Error('Token expired')
+            }
+            throw new Error('Invalid token')
         }
-        if (error instanceof jwt.JsonWebTokenError) {
-            throw new Error('Invalid token');
-        }
-        throw error;
+        throw error
     }
 }
 
-export function verifyRefreshToken(token: string): TokenPayload {
+export async function verifyRefreshToken(token: string): Promise<TokenPayload> {
     try {
-        return jwt.verify(token, JWT_REFRESH_SECRET) as TokenPayload;
+        const { payload } = await jwtVerify(token, getJwtRefreshSecretKey())
+        return {
+            userId: payload.userId as string,
+            email: payload.email as string,
+            role: payload.role as string,
+            iat: payload.iat as number,
+            exp: payload.exp as number,
+        }
     } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) {
-            throw new Error('Refresh token expired');
+        if (error instanceof Error) {
+            if (error.message.includes('expired')) {
+                throw new Error('Refresh token expired')
+            }
+            throw new Error('Invalid refresh token')
         }
-        if (error instanceof jwt.JsonWebTokenError) {
-            throw new Error('Invalid refresh token');
-        }
-        throw error;
+        throw error
     }
 }
 
 // Cookie Management Functions
 export async function setAuthCookies(user: any) {
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    const accessToken = await generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user);
 
     const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = {
@@ -136,7 +162,7 @@ export async function getCurrentUser() {
 
         // Verify the access token
         try {
-            const payload = verifyToken(accessToken);
+            const payload = await verifyToken(accessToken);
             console.log('User authenticated successfully:', payload.email);
             return {
                 id: payload.userId,
@@ -149,7 +175,7 @@ export async function getCurrentUser() {
                 // Token expired, try to refresh
                 const newAccessToken = await refreshAccessToken();
                 if (newAccessToken) {
-                    const payload = verifyToken(newAccessToken);
+                    const payload = await verifyToken(newAccessToken);
                     console.log('Token refreshed successfully for user:', payload.email);
                     return {
                         id: payload.userId,
@@ -182,7 +208,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         // Verify refresh token
         let payload: TokenPayload;
         try {
-            payload = verifyRefreshToken(refreshToken);
+            payload = await verifyRefreshToken(refreshToken);
         } catch (error) {
             console.error('Refresh token verification failed:', error);
             await clearAuthCookies();
@@ -196,7 +222,7 @@ export async function refreshAccessToken(): Promise<string | null> {
             role: payload.role,
         };
 
-        const newAccessToken = generateAccessToken(user);
+        const newAccessToken = await generateAccessToken(user);
 
         // Update access token cookie
         const isProduction = process.env.NODE_ENV === 'production';
@@ -229,52 +255,40 @@ export async function getUserRole(): Promise<string | null> {
     return user?.role || null;
 }
 
-// Validate token without refreshing (for middleware)
+// Validate token without refreshing
 export async function validateToken(token: string): Promise<{ valid: boolean; payload?: TokenPayload; error?: string }> {
     try {
-        const payload = verifyToken(token);
+        const payload = await verifyToken(token);
         return { valid: true, payload };
-    } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) {
-            return { valid: false, error: 'Token expired' };
-        }
-        if (error instanceof jwt.JsonWebTokenError) {
-            return { valid: false, error: 'Invalid token' };
-        }
-        return { valid: false, error: 'Token validation failed' };
+    } catch (error: any) {
+        return { valid: false, error: error.message };
     }
 }
 
-// Validate refresh token (for API routes)
+// Validate refresh token
 export async function validateRefreshToken(token: string): Promise<{ valid: boolean; payload?: TokenPayload; error?: string }> {
     try {
-        const payload = verifyRefreshToken(token);
+        const payload = await verifyRefreshToken(token);
         return { valid: true, payload };
-    } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) {
-            return { valid: false, error: 'Refresh token expired' };
-        }
-        if (error instanceof jwt.JsonWebTokenError) {
-            return { valid: false, error: 'Invalid refresh token' };
-        }
-        return { valid: false, error: 'Refresh token validation failed' };
+    } catch (error: any) {
+        return { valid: false, error: error.message };
     }
 }
 
-// Get user from token (for API routes that receive token in headers)
-export function getUserFromToken(token: string): TokenPayload | null {
+// Get user from token
+export async function getUserFromToken(token: string): Promise<TokenPayload | null> {
     try {
-        return verifyToken(token);
+        return await verifyToken(token);
     } catch (error) {
         console.error('Failed to get user from token:', error);
         return null;
     }
 }
 
-// Check if token is about to expire (for proactive refresh)
-export function isTokenExpiringSoon(token: string, thresholdMinutes: number = 5): boolean {
+// Check if token is about to expire
+export async function isTokenExpiringSoon(token: string, thresholdMinutes: number = 5): Promise<boolean> {
     try {
-        const payload = verifyToken(token) as any;
+        const payload = await verifyToken(token);
         if (!payload.exp) return false;
 
         const now = Math.floor(Date.now() / 1000);
@@ -283,7 +297,7 @@ export function isTokenExpiringSoon(token: string, thresholdMinutes: number = 5)
 
         return timeUntilExpiry <= thresholdSeconds;
     } catch (error) {
-        return true; // If we can't verify, consider it expiring
+        return true;
     }
 }
 
@@ -304,7 +318,7 @@ export async function debugAuthState(): Promise<{
 
     if (accessToken) {
         try {
-            verifyToken(accessToken);
+            await verifyToken(accessToken);
             accessTokenValid = true;
         } catch (error) {
             accessTokenValid = false;
@@ -313,7 +327,7 @@ export async function debugAuthState(): Promise<{
 
     if (refreshToken) {
         try {
-            verifyRefreshToken(refreshToken);
+            await verifyRefreshToken(refreshToken);
             refreshTokenValid = true;
         } catch (error) {
             refreshTokenValid = false;

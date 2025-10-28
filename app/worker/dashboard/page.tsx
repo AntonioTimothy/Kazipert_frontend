@@ -120,16 +120,7 @@ export default function WorkerDashboard() {
     return <LoadingSpinner />
   }
 
-  const navigation = [
-    { name: "Dashboard", href: "/worker/dashboard", icon: Home },
-    { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
-    { name: "My Applications", href: "/worker/contracts", icon: FileText },
-    { name: "Wallet", href: "/worker/payments", icon: CreditCard },
-    { name: "Services", href: "/worker/services", icon: Shield },
-    { name: "Training", href: "/worker/training", icon: Video },
-    { name: "Reviews", href: "/worker/reviews", icon: Star },
-    { name: "Support", href: "/worker/support", icon: MessageSquare },
-  ]
+  
 
   const userContract = mockContracts.find((c) => c.workerId === user.id)
   const profileCompletion = calculateProfileCompletion(user)
@@ -208,7 +199,7 @@ export default function WorkerDashboard() {
   ]
 
   return (
-    <PortalLayout navigation={navigation} user={user}>
+    <PortalLayout  user={user}>
       <div className="space-y-6">
         {/* Welcome Header with Profile Prompt */}
         <div className="relative">

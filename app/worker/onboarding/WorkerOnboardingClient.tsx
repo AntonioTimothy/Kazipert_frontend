@@ -1,4 +1,3 @@
-// app/worker/onboarding/WorkerOnboardingClient.tsx
 "use client"
 
 import { PortalLayout } from "@/components/portal-layout"
@@ -44,20 +43,12 @@ import { cn } from "@/lib/utils"
 import { useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 
-const navigation = [
-  { name: "Dashboard", href: "/worker/dashboard", icon: Home },
-  { name: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
-  { name: "My Applications", href: "/worker/contracts", icon: FileText },
-  { name: "Wallet", href: "/worker/payments", icon: CreditCard },
-  { name: "Services", href: "/worker/services", icon: Shield },
-  { name: "Training", href: "/worker/training", icon: Video },
-  { name: "Reviews", href: "/worker/reviews", icon: Star },
-  { name: "Support", href: "/worker/support", icon: MessageSquare },
-]
+
 
 interface WorkerOnboardingClientProps {
   initialUser: any
   initialProgress: any
+  
 }
 
 export default function WorkerOnboardingClient({ initialUser, initialProgress }: WorkerOnboardingClientProps) {
@@ -269,7 +260,7 @@ export default function WorkerOnboardingClient({ initialUser, initialProgress }:
   }
 
   return (
-    <PortalLayout navigation={navigation} user={user}>
+    <PortalLayout  user={user}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

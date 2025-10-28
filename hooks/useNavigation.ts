@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { getNavigationForRole, hasAccessToRoute, NavigationItem } from "@/lib/navigation"
 import { useEffect, useState } from "react"

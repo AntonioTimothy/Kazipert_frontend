@@ -1,11 +1,8 @@
-// app/api/auth/verify-login/route.ts
+// app/api/auth/verify-login-otp/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-change-in-production';
 
 export async function POST(request: NextRequest) {
     try {
@@ -71,9 +68,9 @@ export async function POST(request: NextRequest) {
             data: { verified: true },
         });
 
-        // Generate tokens
-        const accessToken = generateAccessToken(user);
-        const refreshToken = generateRefreshToken(user);
+        // Generate tokens (now async)
+        const accessToken = await generateAccessToken(user);
+        const refreshToken = await generateRefreshToken(user);
 
         // Store refresh token in database
         await prisma.refreshToken.create({

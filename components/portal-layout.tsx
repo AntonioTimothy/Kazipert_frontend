@@ -49,18 +49,7 @@ import { ThemeChanger } from '@/components/ThemeChanger'
 
 interface PortalLayoutProps {
   children: React.ReactNode
-  navigation: Array<{
-    name: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    badge?: string
-    children?: Array<{
-      name: string
-      href: string
-      icon: React.ComponentType<{ className?: string }>
-      badge?: string
-    }>
-  }>
+ 
   user: {
     name: string
     email: string
