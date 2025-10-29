@@ -49,21 +49,21 @@ export default function PostJobPage() {
     return <div>Loading...</div>
   }
 
-  const navigation = [
-    { name: "Dashboard", href: "/employer/dashboard", icon: Home },
-    { name: "My Profile", href: "/employer/profile", icon: User },
-    { name: "Post Job", href: "/employer/post-job", icon: Plus },
-    { name: "My Jobs", href: "/employer/jobs", icon: Briefcase },
-    { name: "Find Workers", href: "/employer/workers", icon: Users },
-    { name: "Contracts", href: "/employer/contracts", icon: FileText },
-    { name: "Payments", href: "/employer/payments", icon: CreditCard },
-    { name: "Services", href: "/employer/services", icon: Shield },
-    { name: "Training", href: "/employer/training", icon: Video },
-    { name: "Support", href: "/employer/support", icon: MessageSquare },
-  ]
+  // const navigation = [
+  //   { name: "Dashboard", href: "/employer/dashboard", icon: Home },
+  //   { name: "My Profile", href: "/employer/profile", icon: User },
+  //   { name: "Post Job", href: "/employer/post-job", icon: Plus },
+  //   { name: "My Jobs", href: "/employer/jobs", icon: Briefcase },
+  //   { name: "Find Workers", href: "/employer/workers", icon: Users },
+  //   { name: "Contracts", href: "/employer/contracts", icon: FileText },
+  //   { name: "Payments", href: "/employer/payments", icon: CreditCard },
+  //   { name: "Services", href: "/employer/services", icon: Shield },
+  //   { name: "Training", href: "/employer/training", icon: Video },
+  //   { name: "Support", href: "/employer/support", icon: MessageSquare },
+  // ]
 
   return (
-    <PortalLayout navigation={navigation} user={user}>
+    <PortalLayout  user={user}>
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Post a New Job</h1>

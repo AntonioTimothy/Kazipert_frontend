@@ -51,18 +51,18 @@ export default function EmployerDashboard() {
     return <LoadingSpinner />
   }
 
-  const navigation = [
-    { name: "Home", href: "/employer/dashboard", icon: Home },
-    { name: "My Profile", href: "/employer/profile", icon: User },
-    { name: "Post Job", href: "/employer/post-job", icon: Plus },
-    { name: "My Jobs", href: "/employer/jobs", icon: Briefcase },
-    { name: "Find Workers", href: "/employer/workers", icon: Users },
-    { name: "Contracts", href: "/employer/contracts", icon: FileText },
-    { name: "Payments", href: "/employer/payments", icon: CreditCard },
-    { name: "Services", href: "/employer/services", icon: Shield },
-    { name: "Training", href: "/employer/training", icon: Video },
-    { name: "Support", href: "/employer/support", icon: MessageSquare },
-  ]
+  // const navigation = [
+  //   { name: "Home", href: "/employer/dashboard", icon: Home },
+  //   { name: "My Profile", href: "/employer/profile", icon: User },
+  //   { name: "Post Job", href: "/employer/post-job", icon: Plus },
+  //   { name: "My Jobs", href: "/employer/jobs", icon: Briefcase },
+  //   { name: "Find Workers", href: "/employer/workers", icon: Users },
+  //   { name: "Contracts", href: "/employer/contracts", icon: FileText },
+  //   { name: "Payments", href: "/employer/payments", icon: CreditCard },
+  //   { name: "Services", href: "/employer/services", icon: Shield },
+  //   { name: "Training", href: "/employer/training", icon: Video },
+  //   { name: "Support", href: "/employer/support", icon: MessageSquare },
+  // ]
 
   // Get employer's jobs and contracts
   const employerJobs = mockJobs.filter((j) => j.employerId === user.id)
@@ -70,7 +70,7 @@ export default function EmployerDashboard() {
   const activeJobs = employerJobs.filter((j) => j.status === "open")
 
   return (
-    <PortalLayout navigation={navigation} user={user}>
+    <PortalLayout user={user}>
       <div className="space-y-6">
         {/* Welcome Section */}
         <div className="flex items-center justify-between">

@@ -65,18 +65,12 @@ export const navigationConfig: NavigationItem[] = [
         roles: ["worker"]
     },
     {
-        name: "Find Jobs",
+        name: "Jobs",
         href: "/worker/jobs",
         icon: Briefcase,
         roles: ["worker"]
     },
-    {
-        name: "My Applications",
-        href: "/worker/contracts",
-        icon: FileText,
-        roles: ["worker"],
-        badge: "3"
-    },
+   
     {
         name: "Wallet",
         href: "/worker/wallet",
@@ -90,27 +84,21 @@ export const navigationConfig: NavigationItem[] = [
         roles: ["worker"]
     },
     {
-        name: "Training",
+        name: "Classes",
         href: "/worker/training",
         icon: Video,
         roles: ["worker"]
     },
+    // {
+    //     name: "Reviews",
+    //     href: "/worker/reviews",
+    //     icon: Star,
+    //     roles: ["worker"]
+    // },
     {
-        name: "Reviews",
-        href: "/worker/reviews",
-        icon: Star,
-        roles: ["worker"]
-    },
-    {
-        name: "Support",
+        name: "Messages",
         href: "/worker/support",
         icon: MessageSquare,
-        roles: ["worker"]
-    },
-    {
-        name: "Profile",
-        href: "/worker/profile",
-        icon: UserCheck,
         roles: ["worker"]
     },
 

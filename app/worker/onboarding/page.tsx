@@ -1,37 +1,45 @@
 "use client"
 
-// app/worker/onboarding/page.tsx
 import { redirect } from 'next/navigation'
 import WorkerOnboardingClient from './WorkerOnboardingClient'
 import { fetchOnboardingProgress } from '@/lib/onboarding-service'
-import { getCurrentUser } from '@/lib/auth'
 import { useEffect, useState } from "react"
 import { WorkerProfile } from '@/lib/mock-data'
 import { useRouter } from "next/navigation"
 
-export default async function WorkerOnboardingPage() {
-  // Get the current authenticated user using the enhanced auth system
+export default function WorkerOnboardingPage() {
   const router = useRouter()
+  const [user, setUser] = useState<WorkerProfile | null>(null)
+  const [progressData, setProgressData] = useState<any>(null)
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-    const [user, setUser] = useState<WorkerProfile | null>(null)
-    const [showProfilePrompt, setShowProfilePrompt] = useState(false)
-    const [loading, setLoading] = useState(true)
+  const calculateProfileCompletion = (user: WorkerProfile) => {
+    return Math.round(
+      ((user.documents.passport ? 1 : 0) +
+        (user.documents.certificate ? 1 : 0) +
+        (user.documents.medicalReport ? 1 : 0) +
+        (user.subscriptions.insurance ? 1 : 0) +
+        (user.subscriptions.legal ? 1 : 0) +
+        (user.subscriptions.medical ? 1 : 0)) *
+        (100 / 6),
+    )
+  }
 
-
-
-    useEffect(() => {
+  useEffect(() => {
+    const initializeOnboarding = async () => {
       const userData = sessionStorage.getItem("user")
       if (!userData) {
         router.push("/login")
         return
       }
-  
+
       const parsedUser = JSON.parse(userData)
       if (parsedUser.role !== "worker") {
         router.push("/login")
         return
       }
-  
+
       setUser(parsedUser)
       
       // Show profile prompt if profile completion is low
@@ -40,27 +48,28 @@ export default async function WorkerOnboardingPage() {
         setShowProfilePrompt(true)
       }
       
+      // Fetch progress data after setting user
+      try {
+        const progress = await fetchOnboardingProgress(parsedUser.id)
+        setProgressData(progress)
+      } catch (error) {
+        console.error("Failed to fetch onboarding progress:", error)
+      }
+      
       setLoading(false)
-    }, [router])
-
-    const calculateProfileCompletion = (user: WorkerProfile) => {
-      return Math.round(
-        ((user.documents.passport ? 1 : 0) +
-          (user.documents.certificate ? 1 : 0) +
-          (user.documents.medicalReport ? 1 : 0) +
-          (user.subscriptions.insurance ? 1 : 0) +
-          (user.subscriptions.legal ? 1 : 0) +
-          (user.subscriptions.medical ? 1 : 0)) *
-          (100 / 6),
-      )
     }
-  
-  
-  
 
-  // Fetch initial progress from database using the actual user ID
-  const progressData = await fetchOnboardingProgress(user?.id)
-  
+    initializeOnboarding()
+  }, [router])
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  if (!user) {
+    return null // or redirect handled by useEffect
+  }
+
   return (
     <WorkerOnboardingClient 
       initialUser={user}

@@ -8,6 +8,8 @@ import { Suspense } from "react"
 import { LiveChatWidget } from "@/components/live-chat-widget"
 import { ThemeProvider } from "@/contexts/ThemeContext"
 import { ThemeInitializer } from '@/components/ThemeInitializer'
+import { LoadingProvider } from '@/contexts/loading-context'
+import { GlobalLoader } from '@/components/global-loader'
 
 export const metadata: Metadata = {
   title: "Kazipert - Connecting Kenyan Workers with Gulf Employers",
@@ -24,11 +26,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
-      <ThemeProvider>
-      <ThemeInitializer />
-        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        {/* <LiveChatWidget /> */}
-        </ThemeProvider>
+        <LoadingProvider>
+          <ThemeProvider>
+            <ThemeInitializer />
+            {/* Global Loading Spinner */}
+            <GlobalLoader />
+            
+            {/* Main Content with Suspense Fallback */}
+            <Suspense fallback={null}> {/* Set to null since GlobalLoader handles loading */}
+              {children}
+            </Suspense>
+            
+            {/* <LiveChatWidget /> */}
+          </ThemeProvider>
+        </LoadingProvider>
 
         <Analytics />
       </body>

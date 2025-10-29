@@ -78,9 +78,33 @@ function OtpInput({ onComplete }: { onComplete: (code: string) => void }) {
   };
 
   const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !values[i] && i > 0) {
+    if (e.key === "Backspace" && !values[i] && i > 0) {
       const el = document.getElementById(`login-otp-${i - 1}`) as HTMLInputElement | null;
       el?.focus();
+    }
+  };
+
+  // ✅ Handle Paste event
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").trim();
+
+    if (!/^\d+$/.test(pasted)) return; // only digits allowed
+
+    const digits = pasted.slice(0, length).split(""); // only first 4 digits
+    const next = [...Array(length)].map((_, idx) => digits[idx] || "");
+    setValues(next);
+
+    // Move focus to the last box or trigger completion
+    const combined = next.join("");
+    if (combined.length === length && !next.includes("")) {
+      onComplete(combined);
+    } else {
+      const firstEmpty = next.findIndex((v) => !v);
+      if (firstEmpty >= 0) {
+        const el = document.getElementById(`login-otp-${firstEmpty}`) as HTMLInputElement | null;
+        el?.focus();
+      }
     }
   };
 
@@ -95,6 +119,7 @@ function OtpInput({ onComplete }: { onComplete: (code: string) => void }) {
           inputMode="numeric"
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={handlePaste} // ✅ Added paste handler
           className="w-12 h-12 text-center rounded-lg border-2 border-gray-300 text-lg font-bold focus:ring-2 focus:ring-[#FFD700] focus:border-[#FFD700] outline-none bg-white transition-all duration-200"
         />
       ))}
