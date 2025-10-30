@@ -138,6 +138,10 @@ export default function WorkerOnboardingClient({ initialUser, initialProgress }:
   const progress = (currentStep / totalSteps) * 100
   const completedSteps = Array.from({ length: currentStep - 1 }, (_, i) => i + 1)
 
+  if (onboardingData?.verification?.paymentVerified && !completedSteps.includes(7)) {
+    completedSteps.push(7)
+  }
+
   const steps = [
     { number: 1, title: "Instructions", icon: BookOpen, description: "Read and accept terms" },
     { number: 2, title: "Personal Info", icon: User, description: "Complete your profile" },
