@@ -239,13 +239,12 @@
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
-  /* Exclude transform and opacity from transitions for performance */
-  .transform,
-  .scale-*,
-  .rotate-*,
-  .translate-*,
-  .opacity-* {
-    transition: none;
+  /* Fixed: Remove invalid CSS wildcard selectors */
+  /* Transform and opacity utilities are handled by Tailwind */
+  .transform {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
   }
 }
 

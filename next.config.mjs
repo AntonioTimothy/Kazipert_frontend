@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove eslint config (no longer supported in Next.js 16)
-  // eslint: {
-  //   ignoreDuringBuilds: true,
-  // },
+  // Remove deprecated eslint config
+  // eslint configuration is now handled separately
   
   typescript: {
     ignoreBuildErrors: true,
@@ -11,33 +9,31 @@ const nextConfig = {
   
   images: {
     unoptimized: true,
-    // Remove domains (deprecated) - use only remotePatterns
-    // domains: ['localhost'],
+    // Remove deprecated domains - use only remotePatterns
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
       {
-        protocol: 'http', 
+        protocol: 'http',
         hostname: '**',
       },
     ],
   },
   
-  // Move serverComponentsExternalPackages out of experimental
+  // Move serverComponentsExternalPackages to root level (no longer in experimental)
   serverExternalPackages: ['fs', 'path', 'bcryptjs'],
   
-  // Remove the experimental block with serverComponentsExternalPackages
+  // Remove the entire experimental block with serverComponentsExternalPackages
   // experimental: {
   //   serverComponentsExternalPackages: ['fs', 'path', 'bcryptjs'],
   // },
   
-  // Add turbopack config to resolve the error
-  turbopack: {
-    // Empty config to silence the error, or add turbopack-specific options
-  },
+  // Add empty turbopack config to resolve the error
+  turbopack: {},
   
+  // Webpack configuration (kept for compatibility)
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -48,7 +44,6 @@ const nextConfig = {
       }
     }
     
-    // Handle file uploads and buffer
     config.resolve.alias = {
       ...config.resolve.alias,
       sharp$: false,
@@ -77,10 +72,7 @@ const nextConfig = {
     ]
   },
   
-  // Increase body size limit for file uploads (if needed)
-  // experimental: {
-  //   serverComponentsExternalPackages: [], // Remove this line entirely
-  // },
+  reactStrictMode: true,
 }
 
 export default nextConfig
