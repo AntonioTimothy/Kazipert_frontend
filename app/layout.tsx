@@ -29,13 +29,14 @@ export default function RootLayout({
         <LoadingProvider>
           <ThemeProvider>
             <ThemeInitializer />
-            {/* Global Loading Spinner */}
-            <GlobalLoader />
             
-            {/* Main Content with Suspense Fallback */}
-            <Suspense fallback={null}> {/* Set to null since GlobalLoader handles loading */}
-              {children}
+            {/* Global Loading Spinner wrapped in Suspense */}
+            <Suspense fallback={<div>Loading...</div>}>
+              <GlobalLoader />
             </Suspense>
+            
+            {/* Main Content */}
+            {children}
             
             {/* <LiveChatWidget /> */}
           </ThemeProvider>

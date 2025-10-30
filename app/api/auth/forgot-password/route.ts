@@ -1,6 +1,6 @@
 // app/api/auth/forgot-password/route.ts
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from '@/lib/prisma';
 import crypto from "crypto";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";

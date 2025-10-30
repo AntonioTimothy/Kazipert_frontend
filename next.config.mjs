@@ -1,28 +1,43 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Remove eslint config (no longer supported in Next.js 16)
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
+  
   typescript: {
     ignoreBuildErrors: true,
   },
+  
   images: {
     unoptimized: true,
-    domains: ['localhost'],
+    // Remove domains (deprecated) - use only remotePatterns
+    // domains: ['localhost'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
       {
-        protocol: 'http',
+        protocol: 'http', 
         hostname: '**',
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['fs', 'path', 'bcryptjs'],
+  
+  // Move serverComponentsExternalPackages out of experimental
+  serverExternalPackages: ['fs', 'path', 'bcryptjs'],
+  
+  // Remove the experimental block with serverComponentsExternalPackages
+  // experimental: {
+  //   serverComponentsExternalPackages: ['fs', 'path', 'bcryptjs'],
+  // },
+  
+  // Add turbopack config to resolve the error
+  turbopack: {
+    // Empty config to silence the error, or add turbopack-specific options
   },
+  
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -42,6 +57,7 @@ const nextConfig = {
     
     return config
   },
+  
   // Allow serving static files from uploads directory
   async headers() {
     return [
@@ -60,8 +76,11 @@ const nextConfig = {
       },
     ]
   },
-  // Increase body size limit for file uploads
-
+  
+  // Increase body size limit for file uploads (if needed)
+  // experimental: {
+  //   serverComponentsExternalPackages: [], // Remove this line entirely
+  // },
 }
 
 export default nextConfig
