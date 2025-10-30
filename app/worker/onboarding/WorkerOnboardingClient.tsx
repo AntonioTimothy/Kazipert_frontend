@@ -144,10 +144,11 @@ export default function WorkerOnboardingClient({ initialUser, initialProgress }:
 
   const steps = [
     { number: 1, title: "Instructions", icon: BookOpen, description: "Read and accept terms" },
-    { number: 2, title: "Personal Info", icon: User, description: "Complete your profile" },
-    { number: 3, title: "KYC Details", icon: User, description: "Identity information" },
-    { number: 4, title: "Documents", icon: FileText, description: "Upload required documents" },
-    { number: 5, title: "Face Verification", icon: Camera, description: "Photo matching" },
+    { number: 2, title: "Documents", icon: FileText, description: "Upload required documents" },
+    { number: 3, title: "Face Verification", icon: Camera, description: "Photo matching" },
+
+    { number: 4, title: "Personal Info", icon: User, description: "Complete your profile" },
+    { number: 5, title: "KYC Details", icon: User, description: "Identity information" },
     { number: 6, title: "Photo Studio", icon: Camera, description: "Professional photos" },
     { number: 7, title: "Payment", icon: CreditCard, description: "Registration fee" },
     { number: 8, title: "Summary", icon: CheckCircle, description: "Review and submit" },
